@@ -2,6 +2,7 @@ import '../css/app.css';
 import React from 'react';
 import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
+import { NuqsAdapter } from 'nuqs/adapters/react';
 import ThemeProvider from '@/components/themes/theme-provider';
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
@@ -21,18 +22,20 @@ createInertiaApp({
   setup({ el, App, props }) {
     const root = createRoot(el);
     root.render(
-      <ThemeProvider
-        attribute='class'
-        defaultTheme='system'
-        enableSystem
-        disableTransitionOnChange
-        enableColorScheme
-      >
-        <Providers activeThemeValue='vercel'>
-          <Toaster />
-          <App {...props} />
-        </Providers>
-      </ThemeProvider>
+      <NuqsAdapter>
+        <ThemeProvider
+          attribute='class'
+          defaultTheme='system'
+          enableSystem
+          disableTransitionOnChange
+          enableColorScheme
+        >
+          <Providers activeThemeValue='vercel'>
+            <Toaster />
+            <App {...props} />
+          </Providers>
+        </ThemeProvider>
+      </NuqsAdapter>
     );
   },
   progress: {
