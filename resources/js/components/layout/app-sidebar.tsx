@@ -159,7 +159,7 @@ export default function AppSidebar() {
           </div>
           <button
             type='button'
-            className='rounded-full bg-[#e05626] hover:bg-[#c8491e] text-white text-xs font-semibold px-3 py-1 transition-colors shadow-xs cursor-pointer'
+            className='rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-3 py-1 transition-colors shadow-xs cursor-pointer'
           >
             Get Pro
           </button>

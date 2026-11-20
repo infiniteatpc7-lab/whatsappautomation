@@ -189,7 +189,7 @@ export default function AccountIndex() {
                     <button
                       type='submit'
                       disabled={isSaving}
-                      className='inline-flex items-center justify-center rounded-md bg-[#e05626] hover:bg-[#c8491e] text-white text-xs font-semibold px-4 py-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50'
+                      className='inline-flex items-center justify-center rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50'
                     >
                       {isSaving ? 'Saving...' : 'Save changes'}
                     </button>
