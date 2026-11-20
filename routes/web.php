@@ -3,6 +3,14 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/login', function () {
+    return Inertia::render('Auth/Login');
+})->name('login');
+
+Route::get('/register', function () {
+    return Inertia::render('Auth/Register');
+})->name('register');
+
 Route::get('/', function () {
     return redirect('/dashboard/overview');
 });
@@ -80,7 +88,11 @@ Route::prefix('dashboard')->group(function () {
         return Inertia::render('Dashboard/Elements/Icons');
     })->name('dashboard.elements.icons');
 
-    // Workspace & Notifications
+    // Account, Workspace & Notifications
+    Route::get('/account', function () {
+        return Inertia::render('Dashboard/Account/Index');
+    })->name('dashboard.account');
+
     Route::get('/workspace', function () {
         return Inertia::render('Dashboard/Workspace');
     })->name('dashboard.workspace');

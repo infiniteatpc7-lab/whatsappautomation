@@ -2,50 +2,71 @@ import { NavGroup } from '@/types';
 
 /**
  * Navigation configuration with RBAC support
- *
- * This configuration is used for both the sidebar navigation and Cmd+K bar.
- * Items are organized into groups, each rendered with a SidebarGroupLabel.
- *
- * RBAC Access Control:
- * Each navigation item can have an `access` property that controls visibility
- * based on permissions, plans, features, roles, and organization context.
- *
- * Examples:
- *
- * 1. Require organization:
- *    access: { requireOrg: true }
- *
- * 2. Require specific permission:
- *    access: { requireOrg: true, permission: 'org:teams:manage' }
- *
- * 3. Require specific plan:
- *    access: { plan: 'pro' }
- *
- * 4. Require specific feature:
- *    access: { feature: 'premium_access' }
- *
- * 5. Require specific role:
- *    access: { role: 'admin' }
- *
- * 6. Multiple conditions (all must be true):
- *    access: { requireOrg: true, permission: 'org:teams:manage', plan: 'pro' }
- *
- * Note: The `visible` function is deprecated but still supported for backward compatibility.
- * Use the `access` property for new items.
  */
 export const navGroups: NavGroup[] = [
   {
-    label: 'Overview',
+    label: 'Dashboard',
     items: [
       {
-        title: 'Dashboard',
+        title: 'Overview',
         url: '/dashboard/overview',
         icon: 'dashboard',
         isActive: false,
         shortcut: ['d', 'd'],
         items: []
       },
-
+      {
+        title: 'Templates',
+        url: '#',
+        icon: 'product',
+        badge: 'PRO',
+        shortcut: ['t', 't'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'MCP',
+        url: '#',
+        icon: 'code',
+        badge: 'PRO',
+        shortcut: ['m', 'm'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Contact',
+        url: '/dashboard/chat',
+        icon: 'chat',
+        shortcut: ['c', 'c'],
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: 'Settings',
+    items: [
+      {
+        title: 'Account',
+        url: '/dashboard/account',
+        icon: 'user',
+        shortcut: ['a', 'c'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Workspace',
+        url: '/dashboard/workspace',
+        icon: 'building',
+        shortcut: ['w', 'w'],
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: 'Elements',
+    items: [
       {
         title: 'Product',
         url: '/dashboard/product',
@@ -71,31 +92,27 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Chat',
-        url: '/dashboard/chat',
-        icon: 'chat',
-        shortcut: ['c', 'c'],
+        title: 'AI Chat',
+        url: '/dashboard/ai-chat',
+        icon: 'sparkles',
+        badge: 'NEW',
+        shortcut: ['a', 'i'],
         isActive: false,
         items: []
       },
       {
-        title: 'AI Chat',
-        url: '/dashboard/ai-chat',
-        icon: 'sparkles',
-        shortcut: ['a', 'i'],
+        title: 'Notifications',
+        url: '/dashboard/notifications',
+        icon: 'notification',
+        shortcut: ['n', 'n'],
         isActive: false,
         items: []
-      }
-    ]
-  },
-  {
-    label: 'Elements',
-    items: [
+      },
       {
         title: 'Forms',
         url: '#',
         icon: 'forms',
-        isActive: true,
+        isActive: false,
         items: [
           {
             title: 'Basic Form',
@@ -133,38 +150,6 @@ export const navGroups: NavGroup[] = [
         icon: 'palette',
         isActive: false,
         items: []
-      }
-    ]
-  },
-  {
-    label: '',
-    items: [
-      {
-        title: 'Account',
-        url: '#',
-        icon: 'account',
-        isActive: true,
-        items: [
-          {
-            title: 'Workspace',
-            url: '/dashboard/workspace',
-            icon: 'building',
-            shortcut: ['w', 'w']
-          },
-          {
-            title: 'Notifications',
-            url: '/dashboard/notifications',
-            icon: 'notification',
-            shortcut: ['n', 'n']
-          },
-
-          {
-            title: 'Login',
-            shortcut: ['l', 'l'],
-            url: '/',
-            icon: 'login'
-          }
-        ]
       }
     ]
   }

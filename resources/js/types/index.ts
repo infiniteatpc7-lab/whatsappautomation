@@ -18,6 +18,7 @@ export interface NavItem {
   label?: string;
   description?: string;
   isActive?: boolean;
+  badge?: string | number;
   items?: NavItem[];
   access?: PermissionCheck;
 }
