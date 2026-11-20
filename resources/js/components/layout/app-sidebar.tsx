@@ -137,7 +137,7 @@ export default function AppSidebar() {
         {filteredGroups.map((group) => (
           <SidebarGroup key={group.label || 'ungrouped'} className='px-0 py-2'>
             {group.label && (
-              <SidebarGroupLabel className='px-3.5 text-[11px] font-semibold tracking-wider text-sidebar-foreground/60 uppercase'>
+              <SidebarGroupLabel className='h-auto font-medium font-mono text-muted-foreground text-xs uppercase leading-4 tracking-widest px-4 pt-4 pb-1.5'>
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -269,18 +269,17 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
           tooltip={item.title}
           isActive={active}
           className={cn(
-            'relative h-9.5 w-full rounded-none px-3.5 font-normal text-sidebar-foreground/75 transition-colors duration-150',
-            'hover:bg-sidebar-accent/50 hover:text-sidebar-foreground dark:hover:bg-white/[0.04] dark:hover:text-white',
-            'data-active:bg-sidebar-accent data-active:text-sidebar-foreground data-active:font-medium',
-            'dark:data-active:bg-neutral-800/90 dark:data-active:text-white',
-            'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[2px] after:bg-foreground dark:after:bg-white after:opacity-0 data-active:after:opacity-100',
+            'relative h-8 w-full min-w-0 items-center gap-2.5 rounded-none px-4 text-sm font-normal text-muted-foreground transition-colors duration-150',
+            'hover:bg-foreground/5 hover:text-foreground',
+            'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
+            'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100',
             'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'
           )}
         >
-          <Icon className='size-4.5 shrink-0' />
+          <Icon className='size-4 shrink-0' />
           <span className='truncate text-sm'>{item.title}</span>
           {item.badge && (
-            <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-neutral-800 text-neutral-300 border border-neutral-700/60 leading-none group-data-[collapsible=icon]:hidden'>
+            <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none group-data-[collapsible=icon]:hidden'>
               {item.badge}
             </span>
           )}
@@ -302,17 +301,16 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                 tooltip={item.title}
                 isActive={hasActiveChild}
                 className={cn(
-                  'relative h-9.5 w-full rounded-none justify-center px-0 font-normal text-sidebar-foreground/75 transition-colors duration-150',
-                  'hover:bg-sidebar-accent/50 hover:text-sidebar-foreground dark:hover:bg-white/[0.04] dark:hover:text-white',
-                  'data-active:bg-sidebar-accent data-active:text-sidebar-foreground data-active:font-medium',
-                  'dark:data-active:bg-neutral-800/90 dark:data-active:text-white',
-                  'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[2px] after:bg-foreground dark:after:bg-white after:opacity-0 data-active:after:opacity-100',
-                  'data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground'
+                  'relative h-8 w-full min-w-0 justify-center rounded-none px-0 text-sm font-normal text-muted-foreground transition-colors duration-150',
+                  'hover:bg-foreground/5 hover:text-foreground',
+                  'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
+                  'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100',
+                  'data-popup-open:bg-foreground/5 data-popup-open:text-foreground'
                 )}
               />
             }
           >
-            <Icon className='size-4.5 shrink-0' />
+            <Icon className='size-4 shrink-0' />
             <span className='truncate text-sm'>{item.title}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -386,19 +384,18 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
             tooltip={item.title}
             isActive={pathname === item.url || hasActiveChild}
             className={cn(
-              'group/collapsible relative h-9.5 w-full rounded-none px-3.5 font-normal text-sidebar-foreground/75 transition-colors duration-150',
-              'hover:bg-sidebar-accent/50 hover:text-sidebar-foreground dark:hover:bg-white/[0.04] dark:hover:text-white',
-              'data-active:bg-sidebar-accent data-active:text-sidebar-foreground data-active:font-medium',
-              'dark:data-active:bg-neutral-800/90 dark:data-active:text-white',
-              'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[2px] after:bg-foreground dark:after:bg-white after:opacity-0 data-active:after:opacity-100'
+              'group/collapsible relative h-8 w-full min-w-0 items-center gap-2.5 rounded-none px-4 text-sm font-normal text-muted-foreground transition-colors duration-150',
+              'hover:bg-foreground/5 hover:text-foreground',
+              'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
+              'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100'
             )}
           />
         }
       >
-        {item.icon && <Icon className='size-4.5 shrink-0' />}
+        {item.icon && <Icon className='size-4 shrink-0' />}
         <span className='truncate text-sm'>{item.title}</span>
         {item.badge && (
-          <span className='ml-auto mr-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-sidebar-accent/80 dark:bg-neutral-800 text-sidebar-foreground/80 dark:text-neutral-300 border border-sidebar-border/60 leading-none'>
+          <span className='ml-auto mr-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none'>
             {item.badge}
           </span>
         )}
@@ -425,16 +422,15 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                   }
                   isActive={childActive}
                   className={cn(
-                    'relative h-8.5 w-full rounded-none px-3.5 text-sidebar-foreground/75 transition-colors duration-150',
-                    'hover:bg-sidebar-accent/50 hover:text-sidebar-foreground dark:hover:bg-white/[0.04] dark:hover:text-white',
-                    'data-active:bg-sidebar-accent data-active:text-sidebar-foreground data-active:font-medium',
-                    'dark:data-active:bg-neutral-800/90 dark:data-active:text-white',
-                    'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[2px] after:bg-foreground dark:after:bg-white after:opacity-0 data-active:after:opacity-100'
+                    'relative h-8 w-full min-w-0 rounded-none px-4 text-sm text-muted-foreground transition-colors duration-150',
+                    'hover:bg-foreground/5 hover:text-foreground',
+                    'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
+                    'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100'
                   )}
                 >
                   <span className='truncate text-sm'>{child.title}</span>
                   {child.badge && (
-                    <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-sidebar-accent/80 dark:bg-neutral-800 text-sidebar-foreground/80 dark:text-neutral-300 border border-sidebar-border/60 leading-none'>
+                    <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none'>
                       {child.badge}
                     </span>
                   )}

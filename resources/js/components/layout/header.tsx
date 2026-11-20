@@ -1,7 +1,6 @@
 import { Separator } from '../ui/separator';
 import { Breadcrumbs } from '../breadcrumbs';
 import SearchInput from '../search-input';
-import { ThemeSelector } from '../themes/theme-selector';
 import { ThemeModeToggle } from '../themes/theme-mode-toggle';
 import { ThemeCustomizerTrigger, ThemeCustomizerPanel } from '../themes/theme-customizer';
 import { SidebarToggle } from './sidebar-toggle';
@@ -24,9 +23,6 @@ export default function Header() {
           <SearchInput />
           <ThemeCustomizerTrigger />
           <ThemeModeToggle />
-          <div className='hidden sm:block'>
-            <ThemeSelector />
-          </div>
           <NotificationCenter />
         </div>
       </header>
