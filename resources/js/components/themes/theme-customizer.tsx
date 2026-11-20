@@ -150,14 +150,13 @@ export function ThemeCustomizerPanel() {
 
   return (
     <div className='relative w-full border-b bg-background/95 backdrop-blur-md z-40 transition-all duration-200 animate-in fade-in slide-in-from-top-2'>
-      <div className='container mx-auto px-4 py-5 max-w-7xl'>
-        <div className='flex items-start justify-between gap-4 mb-3 sm:mb-0'>
-          <div className='flex flex-wrap items-start gap-8 lg:gap-10 xl:gap-12 flex-1'>
-            {/* 1. THEME (Accent Swatches) */}
-            <fieldset className='flex flex-col gap-2 min-w-[210px]'>
-              <legend className='text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none'>
-                Theme
-              </legend>
+      <div className='w-full px-4 py-4 max-w-7xl mx-auto'>
+        <div className='flex items-start justify-between gap-6 lg:gap-8 overflow-x-auto'>
+          {/* 1. THEME (Accent Swatches) */}
+          <fieldset className='flex flex-col gap-1.5 shrink-0'>
+            <legend className='text-xs font-medium text-muted-foreground select-none'>
+              Theme
+            </legend>
               <div className='grid grid-cols-9 gap-1.5 pt-1'>
                 {THEMES_LIST.map((themeItem) => {
                   const isSelected = state.theme === themeItem.name;
@@ -192,9 +191,9 @@ export function ThemeCustomizerPanel() {
               </div>
             </fieldset>
 
-            {/* 2. BASE (Neutral Swatches) */}
-            <fieldset className='flex flex-col gap-2 min-w-[170px]'>
-              <legend className='text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none'>
+            {/* 2. Base (Neutral Swatches) */}
+            <fieldset className='flex flex-col gap-1.5 shrink-0'>
+              <legend className='text-xs font-medium text-muted-foreground select-none'>
                 Base
               </legend>
               <div className='flex items-center gap-1.5 pt-1'>
@@ -231,9 +230,9 @@ export function ThemeCustomizerPanel() {
               </div>
             </fieldset>
 
-            {/* 3. STYLE */}
-            <fieldset className='flex flex-col gap-2 min-w-[210px]'>
-              <legend className='text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none'>
+            {/* 3. Style */}
+            <fieldset className='flex flex-col gap-1.5 shrink-0'>
+              <legend className='text-xs font-medium text-muted-foreground select-none'>
                 Style
               </legend>
               <div className='grid grid-cols-4 gap-1 pt-0.5'>
@@ -259,14 +258,14 @@ export function ThemeCustomizerPanel() {
                   );
                 })}
               </div>
-              <p className='text-[11px] text-muted-foreground/80 italic min-h-[16px] transition-all pt-0.5'>
+              <p className='text-[11px] text-muted-foreground/80 italic min-h-[16px] transition-all pt-0.5 max-w-[210px]'>
                 {displayedStyleNote}
               </p>
             </fieldset>
 
-            {/* 4. RADIUS */}
-            <fieldset className='flex flex-col gap-2 min-w-[150px]'>
-              <legend className='text-xs font-semibold text-muted-foreground uppercase tracking-wider select-none'>
+            {/* 4. Radius */}
+            <fieldset className='flex flex-col gap-1.5 shrink-0'>
+              <legend className='text-xs font-medium text-muted-foreground select-none'>
                 Radius
               </legend>
               <div className='flex items-center gap-1.5 pt-1'>
