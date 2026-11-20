@@ -913,8 +913,8 @@ export interface CustomizerState {
 }
 
 export const DEFAULT_CUSTOMIZER_STATE: CustomizerState = {
-  theme: 'amber',
-  base: 'zinc',
+  theme: 'cyan',
+  base: 'taupe',
   style: 'nova',
   radius: 'default'
 };

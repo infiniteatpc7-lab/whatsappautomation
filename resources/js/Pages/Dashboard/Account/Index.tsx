@@ -98,7 +98,7 @@ export default function AccountIndex() {
                   render={<Link href='/dashboard/workspace' />}
                   variant='outline'
                   size='sm'
-                  className='h-9 px-4 text-xs font-medium border-border/80 hover:bg-accent'
+                  className='h-8 px-4 text-xs font-medium border-border/80 hover:bg-accent rounded-full'
                 >
                   Your workspace
                 </Button>
@@ -134,8 +134,8 @@ export default function AccountIndex() {
               <div className='flex-1 min-w-0 space-y-6'>
                 {/* User Identity Card */}
                 <div className='flex items-center gap-4'>
-                  <div className='flex size-12 items-center justify-center rounded-full bg-white border border-neutral-200 text-[#0284c7] shadow-xs'>
-                    <IconInfinity className='size-7 text-[#0284c7]' />
+                  <div className='flex size-16 items-center justify-center rounded-full bg-white border border-neutral-200 text-[#0284c7] shadow-xs'>
+                    <IconInfinity className='size-8 text-[#0284c7]' />
                   </div>
                   <div className='flex flex-col min-w-0'>
                     <span className='font-semibold text-sm text-foreground truncate'>
@@ -189,7 +189,7 @@ export default function AccountIndex() {
                     <button
                       type='submit'
                       disabled={isSaving}
-                      className='inline-flex items-center justify-center rounded-md bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50'
+                      className='inline-flex items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50'
                     >
                       {isSaving ? 'Saving...' : 'Save changes'}
                     </button>
@@ -269,7 +269,7 @@ export default function AccountIndex() {
                     onClick={handleRegenerate}
                     variant='outline'
                     size='sm'
-                    className='h-8 px-3 text-xs font-medium border-border/80 hover:bg-accent gap-1.5 self-start sm:self-auto'
+                    className='h-8 px-3 text-xs font-medium border-border/80 hover:bg-accent gap-1.5 self-start sm:self-auto rounded-full'
                   >
                     <IconRefresh className='size-3.5' />
                     Regenerate
@@ -337,7 +337,7 @@ export default function AccountIndex() {
                       render={
                         <button
                           type='button'
-                          className='inline-flex items-center gap-1.5 rounded-md bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/60 text-xs font-medium px-3.5 py-2 transition-colors cursor-pointer'
+                          className='inline-flex items-center gap-1.5 rounded-full bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/60 text-xs font-medium px-4 py-2 transition-colors cursor-pointer'
                         />
                       }
                     >
