@@ -54,7 +54,7 @@ export default function AppSidebar() {
       try {
         const stored = sessionStorage.getItem('sidebar_scroll_top');
         if (stored) targetScroll = Number(stored);
-      } catch {}
+      } catch { }
     }
 
     if (targetScroll > 0) {
@@ -80,7 +80,7 @@ export default function AppSidebar() {
     savedSidebarScrollTop = e.currentTarget.scrollTop;
     try {
       sessionStorage.setItem('sidebar_scroll_top', String(e.currentTarget.scrollTop));
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -151,20 +151,6 @@ export default function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className='p-2 border-t border-sidebar-border/40 gap-2'>
-        {/* Free Plan / Get Pro Card */}
-        <div className='rounded-lg border border-neutral-800 bg-neutral-900/60 p-2.5 flex items-center justify-between group-data-[collapsible=icon]:hidden'>
-          <div className='flex flex-col'>
-            <span className='text-[10px] font-bold tracking-wider uppercase text-neutral-400'>FREE PLAN</span>
-            <span className='text-xs text-neutral-500'>Pro unlocks it all</span>
-          </div>
-          <button
-            type='button'
-            className='rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-3 py-1 transition-colors shadow-xs cursor-pointer'
-          >
-            Get Pro
-          </button>
-        </div>
-
         {/* User Profile Switcher */}
         <SidebarMenu>
           <SidebarMenuItem>
@@ -395,7 +381,7 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
         {item.icon && <Icon className='size-4 shrink-0' />}
         <span className='truncate text-sm'>{item.title}</span>
         {item.badge && (
-          <span className='ml-auto mr-1 inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none'>
+          <span className='ml-auto mr-1 font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none'>
             {item.badge}
           </span>
         )}
@@ -430,7 +416,7 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                 >
                   <span className='truncate text-sm'>{child.title}</span>
                   {child.badge && (
-                    <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none'>
+                    <span className='ml-auto font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none'>
                       {child.badge}
                     </span>
                   )}

@@ -26,7 +26,7 @@ export function ActiveThemeProvider({
   children: ReactNode;
   initialTheme?: string;
 }) {
-  const themeToUse = initialTheme || DEFAULT_THEME;
+  const themeToUse = (!initialTheme || initialTheme === 'vercel') ? DEFAULT_THEME : initialTheme;
   const [activeTheme, setActiveTheme] = useState<string>(themeToUse);
 
   useEffect(() => {

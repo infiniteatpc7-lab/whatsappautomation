@@ -44,27 +44,6 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    label: 'Settings',
-    items: [
-      {
-        title: 'Account',
-        url: '/dashboard/account',
-        icon: 'user',
-        shortcut: ['a', 'c'],
-        isActive: false,
-        items: []
-      },
-      {
-        title: 'Workspace',
-        url: '/dashboard/workspace',
-        icon: 'building',
-        shortcut: ['w', 'w'],
-        isActive: false,
-        items: []
-      }
-    ]
-  },
-  {
     label: 'Elements',
     items: [
       {
@@ -148,6 +127,27 @@ export const navGroups: NavGroup[] = [
         title: 'Icons',
         url: '/dashboard/elements/icons',
         icon: 'palette',
+        isActive: false,
+        items: []
+      }
+    ]
+  },
+  {
+    label: 'Settings',
+    items: [
+      {
+        title: 'Account',
+        url: '/dashboard/account',
+        icon: 'user',
+        shortcut: ['a', 'c'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Workspace',
+        url: '/dashboard/workspace',
+        icon: 'building',
+        shortcut: ['w', 'w'],
         isActive: false,
         items: []
       }

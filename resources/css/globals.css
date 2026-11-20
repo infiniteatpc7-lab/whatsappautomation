@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+@theme {
+  --font-sans: 'Hanken Grotesk', 'Hanken Grotesk Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-heading: 'Hanken Grotesk', 'Hanken Grotesk Fallback', ui-sans-serif, system-ui, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+}
+
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));

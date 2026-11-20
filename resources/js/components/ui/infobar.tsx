@@ -60,7 +60,18 @@ const InfobarContext = React.createContext<InfobarContextProps | null>(null);
 function useInfobar() {
   const context = React.useContext(InfobarContext);
   if (!context) {
-    throw new Error('useInfobar must be used within a InfobarProvider.');
+    return {
+      state: 'collapsed' as const,
+      open: false,
+      setOpen: () => {},
+      openMobile: false,
+      setOpenMobile: () => {},
+      isMobile: false,
+      toggleInfobar: () => {},
+      content: null,
+      setContent: () => {},
+      isPathnameChanging: false
+    };
   }
 
   return context;

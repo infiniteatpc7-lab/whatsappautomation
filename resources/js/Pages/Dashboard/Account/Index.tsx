@@ -75,14 +75,14 @@ export default function AccountIndex() {
           <CrosshairRow hasTopCrosshair className='pb-8'>
             <div className='flex flex-col md:flex-row md:items-center justify-between gap-6'>
               <div className='space-y-2'>
-                <span className='inline-block text-[11px] font-mono font-semibold tracking-wider text-muted-foreground uppercase'>
+                <span className='lined-label font-medium font-mono text-muted-foreground text-xs uppercase leading-4 tracking-widest'>
                   Free Plan
                 </span>
                 <div className='flex items-center gap-3'>
                   <div className='flex size-8 items-center justify-center rounded-full bg-white border border-neutral-200 text-[#0284c7] shadow-2xs'>
                     <IconInfinity className='size-5 text-[#0284c7]' />
                   </div>
-                  <h1 className='text-2xl md:text-3xl font-bold tracking-tight text-foreground'>
+                  <h1 className='lined-title text-balance font-semibold text-3xl tracking-tighter md:text-4xl text-foreground'>
                     Your account
                   </h1>
                 </div>
@@ -98,7 +98,7 @@ export default function AccountIndex() {
                   render={<Link href='/dashboard/workspace' />}
                   variant='outline'
                   size='sm'
-                  className='h-8 px-4 text-xs font-medium border-border/80 hover:bg-accent rounded-full'
+                  className='h-8 px-4 text-xs font-medium border-border/80 hover:bg-accent'
                 >
                   Your workspace
                 </Button>
@@ -111,10 +111,10 @@ export default function AccountIndex() {
             <div className='flex flex-col md:flex-row gap-8 md:gap-12'>
               {/* Left Column Descriptor */}
               <div className='w-full md:w-80 shrink-0 space-y-3'>
-                <div className='flex size-9 items-center justify-center rounded-md border border-border/80 bg-neutral-900/60 text-foreground'>
+                <div className='flex size-9 items-center justify-center rounded-md border border-border/80 bg-muted/50 dark:bg-neutral-900/60 text-foreground'>
                   <IconUser className='size-4.5' />
                 </div>
-                <h2 className='text-base font-semibold text-foreground tracking-tight'>
+                <h2 className='mt-1 text-balance font-semibold text-xl tracking-tight text-foreground'>
                   Profile
                 </h2>
                 <p className='text-xs text-muted-foreground leading-relaxed'>
@@ -161,7 +161,7 @@ export default function AccountIndex() {
                         id='account-name'
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className='h-9 bg-neutral-950/60 border-border/80 text-sm font-normal focus:border-foreground/50'
+                        className='h-9 bg-muted/40 dark:bg-neutral-950/60 border-input dark:border-border/80 text-foreground text-sm font-normal focus:border-foreground/50'
                       />
                       <p className='text-[11px] text-muted-foreground/70'>
                         Real name or pseudonym: what others see.
@@ -177,7 +177,7 @@ export default function AccountIndex() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder='Optional'
-                        className='h-9 bg-neutral-950/60 border-border/80 text-sm font-normal focus:border-foreground/50'
+                        className='h-9 bg-muted/40 dark:bg-neutral-950/60 border-input dark:border-border/80 text-foreground text-sm font-normal focus:border-foreground/50'
                       />
                       <p className='text-[11px] text-muted-foreground/70'>
                         Stays private, never shown.
@@ -186,13 +186,14 @@ export default function AccountIndex() {
                   </div>
 
                   <div className='flex justify-end pt-2'>
-                    <button
+                    <Button
                       type='submit'
                       disabled={isSaving}
-                      className='inline-flex items-center justify-center rounded-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 transition-colors shadow-xs cursor-pointer disabled:opacity-50'
+                      size='sm'
+                      className='h-8 px-4 text-xs font-semibold cursor-pointer'
                     >
                       {isSaving ? 'Saving...' : 'Save changes'}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </div>
@@ -204,10 +205,10 @@ export default function AccountIndex() {
             <div className='flex flex-col md:flex-row gap-8 md:gap-12'>
               {/* Left Column Descriptor */}
               <div className='w-full md:w-80 shrink-0 space-y-3'>
-                <div className='flex size-9 items-center justify-center rounded-md border border-border/80 bg-neutral-900/60 text-foreground'>
+                <div className='flex size-9 items-center justify-center rounded-md border border-border/80 bg-muted/50 dark:bg-neutral-900/60 text-foreground'>
                   <IconKey className='size-4.5' />
                 </div>
-                <h2 className='text-base font-semibold text-foreground tracking-tight'>
+                <h2 className='mt-1 text-balance font-semibold text-xl tracking-tight text-foreground'>
                   Registry token
                 </h2>
                 <p className='text-xs text-muted-foreground leading-relaxed'>
@@ -233,13 +234,13 @@ export default function AccountIndex() {
                       id='registry-token'
                       readOnly
                       value={showToken ? token : '••••••••••••••••••••••••••••••••••••••••••••••••••••'}
-                      className='h-9 font-mono text-xs pr-20 bg-neutral-950/60 border-border/80 text-muted-foreground select-all'
+                      className='h-9 font-mono text-xs pr-20 bg-muted/40 dark:bg-neutral-950/60 border-input dark:border-border/80 text-foreground select-all'
                     />
                     <div className='absolute right-1.5 flex items-center gap-1'>
                       <button
                         type='button'
                         onClick={() => setShowToken(!showToken)}
-                        className='p-1 rounded text-muted-foreground hover:text-foreground hover:bg-neutral-800 transition-colors'
+                        className='p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-neutral-800 transition-colors'
                         title={showToken ? 'Hide token' : 'Show token'}
                       >
                         {showToken ? <IconEyeOff className='size-4' /> : <IconEye className='size-4' />}
@@ -247,7 +248,7 @@ export default function AccountIndex() {
                       <button
                         type='button'
                         onClick={handleCopy}
-                        className='p-1 rounded text-muted-foreground hover:text-foreground hover:bg-neutral-800 transition-colors'
+                        className='p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted dark:hover:bg-neutral-800 transition-colors'
                         title='Copy token'
                       >
                         {copied ? (
@@ -269,7 +270,7 @@ export default function AccountIndex() {
                     onClick={handleRegenerate}
                     variant='outline'
                     size='sm'
-                    className='h-8 px-3 text-xs font-medium border-border/80 hover:bg-accent gap-1.5 self-start sm:self-auto rounded-full'
+                    className='h-8 px-3 text-xs font-medium border-border/80 hover:bg-accent gap-1.5 self-start sm:self-auto'
                   >
                     <IconRefresh className='size-3.5' />
                     Regenerate
@@ -284,10 +285,10 @@ export default function AccountIndex() {
             <div className='flex flex-col md:flex-row gap-8 md:gap-12'>
               {/* Left Column Descriptor */}
               <div className='w-full md:w-80 shrink-0 space-y-3'>
-                <div className='flex size-9 items-center justify-center rounded-md border border-red-900/50 bg-red-950/30 text-red-500'>
+                <div className='flex size-9 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400'>
                   <IconTrash className='size-4.5' />
                 </div>
-                <h2 className='text-base font-semibold text-red-500 tracking-tight'>
+                <h2 className='mt-1 text-balance font-semibold text-xl tracking-tight text-red-500'>
                   Delete your shadcn.io data
                 </h2>
                 <p className='text-xs text-muted-foreground leading-relaxed'>
@@ -321,7 +322,7 @@ export default function AccountIndex() {
                         href='https://kit.dev'
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='underline underline-offset-2 text-foreground/90 hover:text-white inline-flex items-center gap-0.5'
+                        className='underline underline-offset-2 text-foreground/90 hover:text-foreground inline-flex items-center gap-0.5'
                       >
                         kit.dev
                         <IconArrowUpRight className='size-3 inline' />
@@ -335,9 +336,11 @@ export default function AccountIndex() {
                   <AlertDialog>
                     <AlertDialogTrigger
                       render={
-                        <button
+                        <Button
                           type='button'
-                          className='inline-flex items-center gap-1.5 rounded-full bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/60 text-xs font-medium px-4 py-2 transition-colors cursor-pointer'
+                          variant='outline'
+                          size='sm'
+                          className='inline-flex items-center gap-1.5 bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 dark:bg-destructive/20 dark:border-destructive/30 dark:text-destructive dark:hover:bg-destructive/30 text-xs font-medium px-4 h-8 transition-colors cursor-pointer'
                         />
                       }
                     >

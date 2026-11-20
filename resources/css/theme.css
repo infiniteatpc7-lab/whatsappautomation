@@ -17,6 +17,9 @@ body {
 
 :root {
   --header-height: calc(var(--spacing, 0.25rem) * 12 + 1px);
+  --font-sans: 'Hanken Grotesk', 'Hanken Grotesk Fallback', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-heading: 'Hanken Grotesk', 'Hanken Grotesk Fallback', ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Apply theme fonts to body for all themes */
@@ -54,11 +57,10 @@ body {
   --spacing: 0.22rem !important;
 }
 
-[data-theme] body {
-  /* Remove Next.js font variables to allow theme variables from html to cascade */
-  --font-sans: initial;
-  --font-mono: initial;
-  --font-serif: initial;
-  /* Apply font-family - will now resolve from html's [data-theme] variables */
+html,
+body,
+[data-theme] {
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

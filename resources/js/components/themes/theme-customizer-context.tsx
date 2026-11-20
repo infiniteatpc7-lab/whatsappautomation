@@ -91,10 +91,15 @@ function applyStylesToDocument(state: CustomizerState, isDark: boolean) {
       --sidebar-accent-foreground: ${baseVals.sidebarAccentForeground} !important;
       --sidebar-border: ${baseVals.sidebarBorder} !important;
       --sidebar-ring: ${themeVals.sidebarRing} !important;
-      --radius: ${radiusVal} !important;
+      --radius: ${state.radius === 'none' ? '0px' : radiusVal} !important;
+      --radius-sm: ${state.radius === 'none' ? '0px' : `max(0px, calc(${radiusVal} - 4px))`} !important;
+      --radius-md: ${state.radius === 'none' ? '0px' : `max(0px, calc(${radiusVal} - 2px))`} !important;
+      --radius-lg: ${state.radius === 'none' ? '0px' : radiusVal} !important;
+      --radius-xl: ${state.radius === 'none' ? '0px' : `calc(${radiusVal} + 4px)`} !important;
       --spacing: ${styleObj.spacing || '0.25rem'} !important;
       --tracking-normal: ${styleObj.tracking || '-0.015em'} !important;
     }
+    ${styleObj.locksRadius || state.radius === 'none' ? 'button, input, select, textarea, [data-slot="button"], [data-slot="input"], [data-slot="card"], [data-slot="badge"], .rounded-lg, .rounded-md, .rounded-sm, .rounded-xl { border-radius: 0px !important; }' : ''}
     ${styleObj.locksRadius ? '* { border-radius: 0px !important; }' : ''}
   `;
 

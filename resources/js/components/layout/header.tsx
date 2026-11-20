@@ -8,7 +8,7 @@ import { NotificationCenter } from '@/features/notifications/components/notifica
 
 export default function Header() {
   return (
-    <div className='flex flex-col shrink-0 w-full'>
+    <div className='relative flex flex-col shrink-0 w-full'>
       <header className='flex h-14 shrink-0 items-center gap-3 border-b px-3 md:px-4'>
         <div className='flex min-w-0 flex-1 items-center'>
           <SidebarToggle />
