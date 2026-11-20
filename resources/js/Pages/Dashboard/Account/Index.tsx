@@ -79,8 +79,8 @@ export default function AccountIndex() {
                   Free Plan
                 </span>
                 <div className='flex items-center gap-3'>
-                  <div className='flex size-8 items-center justify-center rounded-full bg-neutral-900 border border-neutral-800 text-white'>
-                    <IconInfinity className='size-5 text-white' />
+                  <div className='flex size-8 items-center justify-center rounded-full bg-white border border-neutral-200 text-[#0284c7] shadow-2xs'>
+                    <IconInfinity className='size-5 text-[#0284c7]' />
                   </div>
                   <h1 className='text-2xl md:text-3xl font-bold tracking-tight text-foreground'>
                     Your account
@@ -134,8 +134,8 @@ export default function AccountIndex() {
               <div className='flex-1 min-w-0 space-y-6'>
                 {/* User Identity Card */}
                 <div className='flex items-center gap-4'>
-                  <div className='flex size-12 items-center justify-center rounded-full bg-neutral-900 border border-neutral-700/80 text-white shadow-xs'>
-                    <IconInfinity className='size-6 text-white' />
+                  <div className='flex size-12 items-center justify-center rounded-full bg-white border border-neutral-200 text-[#0284c7] shadow-xs'>
+                    <IconInfinity className='size-7 text-[#0284c7]' />
                   </div>
                   <div className='flex flex-col min-w-0'>
                     <span className='font-semibold text-sm text-foreground truncate'>

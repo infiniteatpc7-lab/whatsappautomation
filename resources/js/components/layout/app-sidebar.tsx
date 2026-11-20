@@ -177,8 +177,8 @@ export default function AppSidebar() {
                   />
                 }
               >
-                <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-white border border-neutral-700/60 overflow-hidden'>
-                  <Icons.logo className='size-4' />
+                <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-[#0284c7] border border-neutral-200 overflow-hidden shadow-2xs'>
+                  <Icons.logo className='size-4.5 text-[#0284c7]' />
                 </div>
                 <div className='flex flex-col text-left text-xs leading-tight min-w-0 flex-1 truncate'>
                   <span className='font-semibold truncate text-sidebar-foreground'>infiniteatpc7-lab</span>
@@ -195,8 +195,8 @@ export default function AppSidebar() {
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className='p-0 font-normal'>
                     <div className='flex items-center gap-2 px-2 py-1.5 text-left text-sm'>
-                      <div className='flex size-8 items-center justify-center rounded-full bg-neutral-800 text-white'>
-                        <Icons.logo className='size-4' />
+                      <div className='flex size-8 items-center justify-center rounded-full bg-white text-[#0284c7] border border-neutral-200 overflow-hidden shadow-2xs'>
+                        <Icons.logo className='size-4.5 text-[#0284c7]' />
                       </div>
                       <div className='grid flex-1 text-left text-xs leading-tight'>
                         <span className='truncate font-semibold'>infiniteatpc7-lab</span>
@@ -279,7 +279,7 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
           <Icon className='size-4 shrink-0' />
           <span className='truncate text-sm'>{item.title}</span>
           {item.badge && (
-            <span className='ml-auto inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-foreground/10 text-muted-foreground border border-border/50 leading-none group-data-[collapsible=icon]:hidden'>
+            <span className='ml-auto font-mono text-xs font-normal tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden'>
               {item.badge}
             </span>
           )}
