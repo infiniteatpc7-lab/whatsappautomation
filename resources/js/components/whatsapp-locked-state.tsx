@@ -17,7 +17,7 @@ export function WhatsAppLockedState({
     <div className='flex flex-1 items-center justify-center min-h-[460px] p-6'>
       <div className='max-w-md w-full text-center space-y-5 flex flex-col items-center p-8 rounded-xl border border-dashed border-border/80 bg-muted/20 dark:bg-neutral-950/40'>
         <div className='relative'>
-          <div className='flex size-14 items-center justify-center rounded-2xl bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20'>
+          <div className='flex size-14 items-center justify-center rounded-2xl bg-[#25D366]/10 text-[#25D366]'>
             <IconBrandWhatsapp className='size-7' />
           </div>
           <div className='absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-background border border-border text-muted-foreground shadow-xs'>
@@ -25,14 +25,14 @@ export function WhatsAppLockedState({
           </div>
         </div>
 
-        <div className='space-y-2'>
-          <div className='flex items-center justify-center gap-2'>
-            <h3 className='font-semibold text-lg text-foreground tracking-tight'>
+        <div className='space-y-2.5'>
+          <div className='flex flex-col sm:flex-row items-center justify-center gap-2'>
+            <h3 className='font-semibold text-lg text-foreground tracking-tight text-center'>
               {featureName} Locked
             </h3>
             <Badge
-              variant='outline'
-              className='text-xs font-medium rounded-md border-border/80 text-muted-foreground bg-muted/40'
+              variant='secondary'
+              className='text-xs font-medium px-3 py-1 rounded-md border-0 text-muted-foreground bg-muted/40 shrink-0'
             >
               Setup Required
             </Badge>
