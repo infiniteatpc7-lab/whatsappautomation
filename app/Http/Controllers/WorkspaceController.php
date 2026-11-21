@@ -60,11 +60,20 @@ class WorkspaceController extends Controller
 
         $whatsappAccount = $account ? [
             'id' => $account->id,
+            'waba_id' => $account->waba_id,
+            'phone_number_id' => $account->phone_number_id,
             'phone_number' => $account->display_phone_number,
+            'display_phone_number' => $account->display_phone_number,
             'status' => $account->status instanceof WhatsAppAccountStatus ? $account->status->value : (string) $account->status,
             'verified_name' => $account->verified_name,
             'quality_rating' => $account->quality_rating,
             'tier' => $account->messaging_limit_tier,
+            'webhook_verify_token' => $account->webhook_verify_token,
+            'webhook_url' => rtrim((string) config('app.url', url('/')), '/') . '/api/webhooks/whatsapp',
+            'last_synced_at' => $account->last_synced_at?->diffForHumans() ?? $account->last_synced_at?->toISOString(),
+            'has_access_token' => ! empty($account->access_token),
+            'has_app_secret' => ! empty($account->app_secret),
+            'has_webhook_verify_token' => ! empty($account->webhook_verify_token),
         ] : null;
 
         $pendingInvitations = $workspace->invitations()

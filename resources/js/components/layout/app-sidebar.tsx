@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { navGroups } from '@/config/nav-config';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
-import type { NavItem } from '@/types';
+import type { NavItem, SharedProps } from '@/types';
 import { Link, usePage, router } from '@inertiajs/react';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -38,10 +38,15 @@ import { toast } from 'sonner';
 let savedSidebarScrollTop = 0;
 
 export default function AppSidebar() {
-  const page = usePage();
+  const page = usePage<SharedProps>();
   const pathname = (page?.url || '').split('?')[0];
   const filteredGroups = useFilteredNavGroups(navGroups);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const auth = page?.props?.auth;
+  const user = auth?.user;
+  const currentWorkspace = auth?.workspace;
+  const workspaces = auth?.workspaces || [];
 
   // Restore scroll position on mount and whenever pathname changes
   useLayoutEffect(() => {
@@ -98,11 +103,15 @@ export default function AppSidebar() {
                 }
               >
                 <div className='flex size-8 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-white font-semibold text-xs border border-neutral-700/60'>
-                  I
+                  {(currentWorkspace?.name || 'W').charAt(0).toUpperCase()}
                 </div>
                 <div className='flex flex-col text-left text-xs leading-tight min-w-0 flex-1 truncate'>
-                  <span className='font-semibold truncate text-sidebar-foreground'>infiniteatdeveloper</span>
-                  <span className='text-[10px] text-muted-foreground truncate'>Owner · Free plan</span>
+                  <span className='font-semibold truncate text-sidebar-foreground'>
+                    {currentWorkspace?.name || 'Workspace'}
+                  </span>
+                  <span className='text-[10px] text-muted-foreground truncate capitalize'>
+                    {currentWorkspace?.role || 'Owner'} · {currentWorkspace?.plan || 'Starter'} plan
+                  </span>
                 </div>
                 <Icons.chevronsUpDown className='ml-auto size-4 shrink-0 text-muted-foreground' />
               </DropdownMenuTrigger>
@@ -116,11 +125,39 @@ export default function AppSidebar() {
                   <DropdownMenuLabel className='text-xs font-semibold text-muted-foreground'>
                     Workspaces
                   </DropdownMenuLabel>
-                  <DropdownMenuItem onClick={() => router.visit('/dashboard/workspace')}>
-                    <div className='flex size-6 items-center justify-center rounded-md bg-neutral-800 text-white font-semibold text-[10px] mr-2'>
-                      I
-                    </div>
-                    <span>infiniteatdeveloper</span>
+                  {workspaces.map((ws) => (
+                    <DropdownMenuItem
+                      key={ws.uuid}
+                      onClick={() => {
+                        if (ws.id === currentWorkspace?.id) {
+                          router.visit('/dashboard/workspace');
+                          return;
+                        }
+                        router.post(`/dashboard/workspace/switch/${ws.uuid}`, {}, {
+                          onSuccess: () => toast.success(`Switched to ${ws.name}`)
+                        });
+                      }}
+                      className={cn(
+                        'flex items-center gap-2 cursor-pointer',
+                        ws.id === currentWorkspace?.id && 'bg-accent font-medium'
+                      )}
+                    >
+                      <div className='flex size-6 items-center justify-center rounded-md bg-neutral-800 text-white font-semibold text-[10px] mr-1'>
+                        {ws.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className='truncate flex-1'>{ws.name}</span>
+                      {ws.id === currentWorkspace?.id && (
+                        <span className='size-1.5 rounded-full bg-primary' />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => router.visit('/dashboard/workspace')}
+                    className='cursor-pointer text-xs'
+                  >
+                    <Icons.settings className='mr-2 size-3.5' />
+                    Workspace Settings
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -164,11 +201,15 @@ export default function AppSidebar() {
                 }
               >
                 <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-white text-[#0284c7] border border-neutral-200 overflow-hidden shadow-2xs'>
-                  <Icons.logo className='size-4.5 text-[#0284c7]' />
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.name} className='size-full object-cover' />
+                  ) : (
+                    <Icons.logo className='size-4.5 text-[#0284c7]' />
+                  )}
                 </div>
                 <div className='flex flex-col text-left text-xs leading-tight min-w-0 flex-1 truncate'>
-                  <span className='font-semibold truncate text-sidebar-foreground'>infiniteatpc7-lab</span>
-                  <span className='text-[10px] text-muted-foreground truncate'>infiniteatpc7@gmail.com</span>
+                  <span className='font-semibold truncate text-sidebar-foreground'>{user?.name || 'User'}</span>
+                  <span className='text-[10px] text-muted-foreground truncate'>{user?.email || ''}</span>
                 </div>
                 <Icons.chevronsUpDown className='ml-auto size-4 shrink-0 text-muted-foreground' />
               </DropdownMenuTrigger>
@@ -182,11 +223,15 @@ export default function AppSidebar() {
                   <DropdownMenuLabel className='p-0 font-normal'>
                     <div className='flex items-center gap-2 px-2 py-1.5 text-left text-sm'>
                       <div className='flex size-8 items-center justify-center rounded-full bg-white text-[#0284c7] border border-neutral-200 overflow-hidden shadow-2xs'>
-                        <Icons.logo className='size-4.5 text-[#0284c7]' />
+                        {user?.avatar_url ? (
+                          <img src={user.avatar_url} alt={user.name} className='size-full object-cover' />
+                        ) : (
+                          <Icons.logo className='size-4.5 text-[#0284c7]' />
+                        )}
                       </div>
                       <div className='grid flex-1 text-left text-xs leading-tight'>
-                        <span className='truncate font-semibold'>infiniteatpc7-lab</span>
-                        <span className='truncate text-[10px] text-muted-foreground'>infiniteatpc7@gmail.com</span>
+                        <span className='truncate font-semibold'>{user?.name || 'User'}</span>
+                        <span className='truncate text-[10px] text-muted-foreground'>{user?.email || ''}</span>
                       </div>
                     </div>
                   </DropdownMenuLabel>
@@ -207,7 +252,10 @@ export default function AppSidebar() {
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.visit('/')}>
+                <DropdownMenuItem
+                  onClick={() => router.post('/logout')}
+                  className='cursor-pointer text-destructive focus:text-destructive'
+                >
                   <Icons.logout className='mr-2 size-4' />
                   Log out
                 </DropdownMenuItem>

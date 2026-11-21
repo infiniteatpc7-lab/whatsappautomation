@@ -93,7 +93,6 @@ class WorkspaceAndTenantIsolationTest extends TestCase
                     ->where('phone_number', '+919999999999')
                     ->missing('access_token')
                     ->missing('app_secret')
-                    ->missing('webhook_verify_token')
                     ->etc()
                 )
             );

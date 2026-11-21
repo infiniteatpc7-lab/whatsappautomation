@@ -30,7 +30,7 @@ class SessionSecurityController extends Controller
 
         Auth::logoutOtherDevices($validated['current_password']);
 
-        if (config('session.driver') === 'database' && Schema::hasTable('sessions')) {
+        if (Schema::hasTable('sessions')) {
             DB::table('sessions')
                 ->where('user_id', $user->id)
                 ->where('id', '!=', $request->session()->getId())
@@ -51,5 +51,27 @@ class SessionSecurityController extends Controller
         }
 
         return back()->with('success', 'Other device sessions logged out successfully.');
+    }
+
+    /**
+     * Log out a specific device session.
+     */
+    public function logoutDevice(Request $request, string $sessionId): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($sessionId === $request->session()->getId()) {
+            return back()->with('error', 'Cannot revoke current device session. Use the Log Out button instead.');
+        }
+
+        if (Schema::hasTable('sessions')) {
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('id', $sessionId)
+                ->delete();
+        }
+
+        return back()->with('success', 'Device session logged out successfully.');
     }
 }

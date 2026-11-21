@@ -1,5 +1,6 @@
 'use client';
 
+import { router } from '@inertiajs/react';
 import { Icons } from '@/components/icons';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -96,7 +97,10 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.post('/logout')}
+                className='cursor-pointer text-destructive focus:text-destructive'
+              >
                 <Icons.logout className='mr-2 h-4 w-4' />
                 Log out
               </DropdownMenuItem>

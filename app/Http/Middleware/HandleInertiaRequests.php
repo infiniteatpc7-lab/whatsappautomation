@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Enums\WhatsAppAccountStatus;
 use App\Enums\WorkspacePlan;
 use App\Enums\WorkspaceRole;
 use App\Models\User;
@@ -60,6 +61,7 @@ class HandleInertiaRequests extends Middleware
                         'avatar_url' => $user->avatar_url,
                         'current_workspace_id' => $user->current_workspace_id,
                         'email_verified' => $user->hasVerifiedEmail(),
+                        'two_factor_enabled' => (bool) $user->two_factor_enabled,
                     ];
                 },
                 'workspace' => function () use ($request): ?array {
@@ -91,6 +93,8 @@ class HandleInertiaRequests extends Middleware
                         'timezone' => $workspace->timezone,
                         'plan' => $workspace->plan instanceof WorkspacePlan ? $workspace->plan->value : (string) $workspace->plan,
                         'role' => $role,
+                        'has_whatsapp' => $workspace->whatsappAccounts()->where('status', WhatsAppAccountStatus::CONNECTED)->exists(),
+                        'has_whatsapp' => $workspace->whatsappAccounts()->where('status', \App\Enums\WhatsAppAccountStatus::CONNECTED)->exists(),
                     ];
                 },
                 'workspaces' => function () use ($request): array {

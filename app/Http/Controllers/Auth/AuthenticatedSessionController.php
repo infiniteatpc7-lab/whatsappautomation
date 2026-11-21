@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Auth;
 
 use App\Enums\AuthEvent;
+use App\Enums\OtpPurpose;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\AuthLog;
 use App\Models\User;
+use App\Services\Auth\DeviceSessionService;
+use App\Services\Auth\EmailOtpService;
 use App\Services\Auth\SessionLimitService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,10 +37,26 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
-
         /** @var User $user */
         $user = Auth::user();
+
+        if ($user->two_factor_enabled) {
+            $remember = $request->boolean('remember');
+            Auth::guard('web')->logout();
+
+            $request->session()->put('login.two_factor_user_id', $user->id);
+            $request->session()->put('login.two_factor_remember', $remember);
+
+            try {
+                app(EmailOtpService::class)->issue($user, OtpPurpose::TWO_FACTOR, $request->ip());
+            } catch (ValidationException) {
+                // Rate limited, user can enter previous code or wait for cooldown
+            }
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        $request->session()->regenerate();
 
         if (! $user->current_workspace_id || ! $user->workspaces()->where('workspaces.id', $user->current_workspace_id)->exists()) {
             $firstWorkspace = $user->workspaces()->first();
@@ -48,6 +68,7 @@ class AuthenticatedSessionController extends Controller
 
         $sessionId = $request->session()->getId();
         app(SessionLimitService::class)->enforce($user, $sessionId);
+        app(DeviceSessionService::class)->notifyNewDeviceLogin($user, $request);
 
         return redirect()->intended(route('dashboard.overview'));
     }

@@ -48,3 +48,39 @@ export interface FooterItem {
 export type MainNavItem = NavItemWithOptionalChildren;
 
 export type SidebarNavItem = NavItemWithChildren;
+
+export interface AuthUser {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  avatar_url: string | null;
+  current_workspace_id: number | null;
+  email_verified: boolean;
+  two_factor_enabled: boolean;
+}
+
+export interface AuthWorkspace {
+  id: number;
+  uuid: string;
+  name: string;
+  slug: string;
+  timezone: string;
+  plan: string;
+  role: string;
+  has_whatsapp: boolean;
+}
+
+export interface SharedProps {
+  auth: {
+    user: AuthUser | null;
+    workspace: AuthWorkspace | null;
+    workspaces: AuthWorkspace[];
+  };
+  flash: {
+    success?: string | null;
+    error?: string | null;
+    status?: string | null;
+  };
+  [key: string]: unknown;
+}
