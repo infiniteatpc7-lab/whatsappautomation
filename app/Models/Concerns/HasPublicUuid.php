@@ -9,9 +9,19 @@ use Illuminate\Support\Str;
 trait HasPublicUuid
 {
     /**
+     * Initialize the trait to automatically populate the uuid attribute upon instantiation.
+     */
+    public function initializeHasPublicUuid(): void
+    {
+        if (empty($this->attributes['uuid'])) {
+            $this->attributes['uuid'] = (string) Str::uuid();
+        }
+    }
+
+    /**
      * Boot the trait to automatically populate the uuid attribute.
      */
-    protected static function bootHasPublicUuid(): void
+    public static function bootHasPublicUuid(): void
     {
         static::creating(function (Model $model): void {
             if (empty($model->uuid)) {

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('waba_id')->index();
             $table->string('phone_number_id')->unique();
             $table->string('display_phone_number');
-            $table->string('verified_name');
+            $table->string('verified_name')->nullable();
             $table->text('access_token');
             $table->text('app_secret')->nullable();
             $table->string('webhook_verify_token');

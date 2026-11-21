@@ -34,6 +34,8 @@ class WhatsAppAccount extends Model
 {
     use BelongsToWorkspace, HasFactory, SoftDeletes;
 
+    protected $table = 'whatsapp_accounts';
+
     protected function casts(): array
     {
         return [
@@ -51,7 +53,7 @@ class WhatsAppAccount extends Model
      */
     public function templates(): HasMany
     {
-        return $this->hasMany(Template::class);
+        return $this->hasMany(Template::class, 'whatsapp_account_id');
     }
 
     /**
@@ -59,7 +61,7 @@ class WhatsAppAccount extends Model
      */
     public function conversations(): HasMany
     {
-        return $this->hasMany(Conversation::class);
+        return $this->hasMany(Conversation::class, 'whatsapp_account_id');
     }
 
     /**
@@ -67,7 +69,7 @@ class WhatsAppAccount extends Model
      */
     public function campaigns(): HasMany
     {
-        return $this->hasMany(Campaign::class);
+        return $this->hasMany(Campaign::class, 'whatsapp_account_id');
     }
 
     /**
@@ -75,6 +77,14 @@ class WhatsAppAccount extends Model
      */
     public function messages(): HasMany
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(Message::class, 'whatsapp_account_id');
+    }
+
+    /**
+     * @return HasMany<AutomationFlow, $this>
+     */
+    public function automationFlows(): HasMany
+    {
+        return $this->hasMany(AutomationFlow::class, 'whatsapp_account_id');
     }
 }

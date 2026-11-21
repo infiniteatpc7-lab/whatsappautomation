@@ -9,4 +9,5 @@ enum WhatsAppAccountStatus: string
     case RESTRICTED = 'restricted';
     case BANNED = 'banned';
     case PENDING = 'pending';
+    case ERROR = 'error';
 }

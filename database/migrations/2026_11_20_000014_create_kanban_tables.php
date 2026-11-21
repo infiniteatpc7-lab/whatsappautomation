@@ -24,7 +24,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('board_id')->constrained('kanban_boards')->cascadeOnDelete();
             $table->string('title');
-            $table->integer('position');
+            $table->integer('position')->default(0);
             $table->string('color')->nullable();
             $table->foreignId('auto_template_id')->nullable()->constrained('templates')->nullOnDelete();
             $table->timestamps();
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->decimal('deal_value', 12, 2)->nullable();
-            $table->integer('position');
+            $table->integer('position')->default(0);
             $table->timestamp('due_at')->nullable();
             $table->timestamps();
 

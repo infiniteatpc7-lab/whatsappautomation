@@ -60,7 +60,7 @@ class Campaign extends Model
      */
     public function whatsappAccount(): BelongsTo
     {
-        return $this->belongsTo(WhatsAppAccount::class);
+        return $this->belongsTo(WhatsAppAccount::class, 'whatsapp_account_id');
     }
 
     /**

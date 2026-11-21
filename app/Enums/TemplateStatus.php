@@ -8,6 +8,7 @@ enum TemplateStatus: string
     case PENDING = 'PENDING';
     case APPROVED = 'APPROVED';
     case REJECTED = 'REJECTED';
+    case IN_APPEAL = 'IN_APPEAL';
     case PAUSED = 'PAUSED';
     case DISABLED = 'DISABLED';
 }

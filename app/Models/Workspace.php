@@ -39,6 +39,7 @@ class Workspace extends Model
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'workspace_user')
+            ->using(WorkspaceUser::class)
             ->withPivot(['role', 'is_available'])
             ->withTimestamps();
     }

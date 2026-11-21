@@ -16,4 +16,6 @@ enum MessageType: string
     case TEMPLATE = 'template';
     case REACTION = 'reaction';
     case ORDER = 'order';
+    case BUTTON = 'button';
+    case UNSUPPORTED = 'unsupported';
 }
