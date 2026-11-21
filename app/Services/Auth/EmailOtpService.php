@@ -94,7 +94,7 @@ class EmailOtpService
             ->where('purpose', $purpose)
             ->whereNull('used_at')
             ->where('expires_at', '>', now())
-            ->where('attempts', '<', 5)
+            ->whereColumn('attempts', '<', 'max_attempts')
             ->latest('id')
             ->first();
 

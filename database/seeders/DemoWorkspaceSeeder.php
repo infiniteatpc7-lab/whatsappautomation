@@ -45,9 +45,9 @@ class DemoWorkspaceSeeder extends Seeder
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
                 'phone' => '919727509785',
-                'email_verified_at' => now(),
             ]
         );
+        $admin->forceFill(['email_verified_at' => now()])->save();
 
         // 2. Workspace
         $workspace = Workspace::firstOrCreate(

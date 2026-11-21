@@ -32,8 +32,8 @@ class AuthSecurityAndOtpTest extends TestCase
             'name' => "Owner {$name}",
             'email' => $email,
             'password' => bcrypt('Secret1234!'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $workspace = Workspace::create([
             'owner_id' => $user->id,
@@ -264,8 +264,8 @@ class AuthSecurityAndOtpTest extends TestCase
             'name' => 'Existing Person',
             'email' => 'exists@example.com',
             'password' => bcrypt('Secret1234!'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         // Send for existing email
         $res1 = $this->postJson('/password/otp/send', ['email' => 'exists@example.com']);
@@ -278,14 +278,36 @@ class AuthSecurityAndOtpTest extends TestCase
         Notification::assertSentTo($user, SendEmailOtpNotification::class);
     }
 
+    public function test_password_reset_otp_send_prevents_cooldown_enumeration_leak(): void
+    {
+        Notification::fake();
+
+        $user = User::create([
+            'name' => 'Cooldown Enum Target',
+            'email' => 'cooldown_enum@example.com',
+            'password' => bcrypt('Secret1234!'),
+        ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
+
+        // 1st request succeeds
+        $res1 = $this->postJson('/password/otp/send', ['email' => 'cooldown_enum@example.com']);
+        $res1->assertOk()->assertJson(['message' => 'If your email is registered, you will receive a verification code.']);
+
+        // 2nd immediate request triggers cooldown in EmailOtpService but must return the EXACT same 200 message
+        $res2 = $this->postJson('/password/otp/send', ['email' => 'cooldown_enum@example.com']);
+        $res2->assertOk()->assertJson(['message' => 'If your email is registered, you will receive a verification code.']);
+    }
+
     public function test_valid_otp_resets_password_and_clears_db_sessions(): void
     {
+        config(['session.driver' => 'database']);
+
         $user = User::create([
             'name' => 'Reset Target',
             'email' => 'target_reset@example.com',
             'password' => bcrypt('OldPassword123!'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         // Simulate active session
         DB::table('sessions')->insert([
@@ -332,8 +354,8 @@ class AuthSecurityAndOtpTest extends TestCase
             'name' => 'Lock Target',
             'email' => 'lock@example.com',
             'password' => bcrypt('Secret1234!'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         for ($i = 0; $i < 5; $i++) {
             $this->post('/login', [
@@ -381,6 +403,7 @@ class AuthSecurityAndOtpTest extends TestCase
                 'password_confirmation' => 'Secret1234!',
             ]);
             $res->assertRedirect('/verify-email');
+            auth()->logout();
         }
 
         // 6th attempt from same IP is throttled (429)
@@ -397,6 +420,8 @@ class AuthSecurityAndOtpTest extends TestCase
     // 5. Concurrent Session Limit & Logout Other Devices
     public function test_concurrent_sessions_evicts_oldest_beyond_limit(): void
     {
+        config(['session.driver' => 'database']);
+
         [$workspace, $user] = $this->createWorkspaceWithOwner('Sessions Corp', 'sessions@example.com');
 
         // Insert 6 sessions
@@ -421,6 +446,8 @@ class AuthSecurityAndOtpTest extends TestCase
 
     public function test_logout_other_devices_removes_other_sessions(): void
     {
+        config(['session.driver' => 'database']);
+
         [$workspace, $user] = $this->createWorkspaceWithOwner('Devices Corp', 'devices@example.com');
 
         DB::table('sessions')->insert([
@@ -462,8 +489,8 @@ class AuthSecurityAndOtpTest extends TestCase
             'name' => 'Invitee User',
             'email' => 'invitee@example.com',
             'password' => bcrypt('Secret1234!'),
-            'email_verified_at' => now(),
         ]);
+        $invitee->forceFill(['email_verified_at' => now()])->save();
 
         // Send invite
         $this->actingAs($owner)
@@ -499,6 +526,20 @@ class AuthSecurityAndOtpTest extends TestCase
     public function test_workspace_slug_collision_with_soft_deleted_workspace_succeeds(): void
     {
         [$workspace, $owner] = $this->createWorkspaceWithOwner('Soft Delete WS', 'soft@example.com');
+
+        // Attach a second active workspace to owner before soft-deleting the first one
+        $activeWs = Workspace::create([
+            'owner_id' => $owner->id,
+            'name' => 'Active Fallback WS',
+            'slug' => 'active-fallback-ws',
+            'timezone' => 'Asia/Kolkata',
+        ]);
+        $activeWs->users()->attach($owner->id, [
+            'role' => WorkspaceRole::OWNER->value,
+            'is_available' => true,
+        ]);
+        $owner->forceFill(['current_workspace_id' => $activeWs->id])->save();
+
         $slug = $workspace->slug;
         $workspace->delete(); // Soft delete
 
@@ -522,8 +563,8 @@ class AuthSecurityAndOtpTest extends TestCase
             'name' => 'Stranger',
             'email' => 'stranger@example.com',
             'password' => bcrypt('Secret1234!'),
-            'email_verified_at' => now(),
         ]);
+        $stranger->forceFill(['email_verified_at' => now()])->save();
 
         $this->actingAs($owner)
             ->patch("/dashboard/workspace/members/{$stranger->id}", [

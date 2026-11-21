@@ -32,7 +32,11 @@ class PasswordResetOtpController extends Controller
         $user = User::where('email', $email)->first();
 
         if ($user) {
-            $otpService->issue($user, OtpPurpose::PASSWORD_RESET, $request->ip());
+            try {
+                $otpService->issue($user, OtpPurpose::PASSWORD_RESET, $request->ip());
+            } catch (ValidationException) {
+                // Suppress cooldown / rate-limit validation exceptions to prevent email enumeration
+            }
         }
 
         $message = 'If your email is registered, you will receive a verification code.';

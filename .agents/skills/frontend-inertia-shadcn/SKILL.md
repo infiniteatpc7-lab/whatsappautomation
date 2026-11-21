@@ -32,6 +32,9 @@ Verified from `package.json`:
 
 ## 2. Component Reuse Before Creating
 
+**Critical Guardrail Rule:**
+> **Never modify the existing Theme Customizer (`theme-customizer*`), global CSS themes, or invent new styling systems. Every new page or component must strictly reuse existing `resources/js/components/ui/*` primitives (`Button`, `Card`, `Input`, `InputOTP`, `DataTable`, `Sheet`, `Dialog`, `Tabs`) without hardcoded `rounded-full` or color overrides so dynamic theme/base/style/radius tokens always apply.**
+
 **DO NOT** install additional component libraries or reinvent UI patterns. Always reuse existing primitives located in `resources/js/components/`:
 
 | Need | Reuse Location | Notes |

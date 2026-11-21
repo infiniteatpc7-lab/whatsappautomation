@@ -67,6 +67,18 @@ class WorkspaceController extends Controller
             'tier' => $account->messaging_limit_tier,
         ] : null;
 
+        $pendingInvitations = $workspace->invitations()
+            ->whereNull('accepted_at')
+            ->where('expires_at', '>', now())
+            ->get(['id', 'email', 'role', 'expires_at', 'created_at'])
+            ->map(fn ($inv) => [
+                'id' => $inv->id,
+                'email' => $inv->email,
+                'role' => $inv->role instanceof WorkspaceRole ? $inv->role->value : (string) $inv->role,
+                'expires_at' => $inv->expires_at?->toISOString(),
+                'created_at' => $inv->created_at?->toISOString(),
+            ]);
+
         return Inertia::render('Dashboard/Workspace', [
             'workspace' => [
                 'id' => $workspace->id,
@@ -77,6 +89,7 @@ class WorkspaceController extends Controller
                 'plan' => $workspace->plan instanceof WorkspacePlan ? $workspace->plan->value : (string) $workspace->plan,
             ],
             'members' => $members,
+            'pendingInvitations' => $pendingInvitations,
             'whatsappAccount' => $whatsappAccount,
         ]);
     }

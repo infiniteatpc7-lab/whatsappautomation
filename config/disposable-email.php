@@ -46,10 +46,10 @@ return [
     | in the built-in or synced disposable domain lists.
     |
     */
-    'whitelist' => [
+    'whitelist' => env('APP_ENV', 'local') !== 'production' ? [
         'whatsappautomation.test',
         'example.com',
-    ],
+    ] : [],
 
     /*
     |--------------------------------------------------------------------------
@@ -71,7 +71,7 @@ return [
     | Set too false to disable caching completely.
     | Default is disable
     */
-    'cache_enabled' => false,
+    'cache_enabled' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -82,5 +82,5 @@ return [
     | This value is in seconds. Default is 60 (1 minute).
     |
     */
-    'cache_ttl' => 60,
+    'cache_ttl' => 3600,
 ];

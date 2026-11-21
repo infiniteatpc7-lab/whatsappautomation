@@ -34,8 +34,8 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => "User {$name}",
             'email' => $userEmail,
             'password' => bcrypt('password123'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $workspace = Workspace::create([
             'owner_id' => $role === WorkspaceRole::OWNER ? $user->id : null,
@@ -150,9 +150,9 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => 'Agent Bob',
             'email' => 'bob@shop.com',
             'password' => bcrypt('password123'),
-            'email_verified_at' => now(),
             'current_workspace_id' => $workspace->id,
         ]);
+        $agent->forceFill(['email_verified_at' => now()])->save();
 
         $workspace->users()->attach($agent->id, [
             'role' => WorkspaceRole::AGENT->value,
@@ -188,9 +188,9 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => 'Admin Alice',
             'email' => 'admin@hq.com',
             'password' => bcrypt('password123'),
-            'email_verified_at' => now(),
             'current_workspace_id' => $workspace->id,
         ]);
+        $admin->forceFill(['email_verified_at' => now()])->save();
 
         $workspace->users()->attach($admin->id, [
             'role' => WorkspaceRole::ADMIN->value,

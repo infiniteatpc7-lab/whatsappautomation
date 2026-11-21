@@ -74,8 +74,8 @@ class AuthFlowTest extends TestCase
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
             'password' => bcrypt('Password123!'),
-            'email_verified_at' => now(),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         $workspace = Workspace::create([
             'owner_id' => $user->id,
