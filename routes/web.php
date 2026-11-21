@@ -1,23 +1,30 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\WorkspaceMemberController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/login', function () {
-    return Inertia::render('Auth/Login');
-})->name('login');
-
-Route::get('/register', function () {
-    return Inertia::render('Auth/Register');
-})->name('register');
-
 Route::get('/', function () {
-    return redirect('/dashboard/overview');
+    return redirect()->route('dashboard.overview');
 });
 
-Route::prefix('dashboard')->group(function () {
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+});
+
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+Route::middleware(['auth', 'workspace'])->prefix('dashboard')->group(function () {
     Route::get('/', function () {
-        return redirect('/dashboard/overview');
+        return redirect()->route('dashboard.overview');
     });
 
     Route::get('/overview', function () {
@@ -59,7 +66,7 @@ Route::prefix('dashboard')->group(function () {
 
     // Forms
     Route::get('/forms', function () {
-        return redirect('/dashboard/forms/basic');
+        return redirect()->route('dashboard.forms.basic');
     });
 
     Route::get('/forms/basic', function () {
@@ -93,9 +100,14 @@ Route::prefix('dashboard')->group(function () {
         return Inertia::render('Dashboard/Account/Index');
     })->name('dashboard.account');
 
-    Route::get('/workspace', function () {
-        return Inertia::render('Dashboard/Workspace');
-    })->name('dashboard.workspace');
+    Route::get('/workspace', [WorkspaceController::class, 'show'])->name('dashboard.workspace');
+    Route::post('/workspace', [WorkspaceController::class, 'store'])->name('dashboard.workspace.store');
+    Route::patch('/workspace/{workspace:uuid}', [WorkspaceController::class, 'update'])->name('dashboard.workspace.update');
+    Route::post('/workspace/switch/{workspace:uuid}', [WorkspaceController::class, 'switch'])->name('dashboard.workspace.switch');
+
+    Route::post('/workspace/members', [WorkspaceMemberController::class, 'store'])->name('dashboard.workspace.members.store');
+    Route::patch('/workspace/members/{user}', [WorkspaceMemberController::class, 'update'])->name('dashboard.workspace.members.update');
+    Route::delete('/workspace/members/{user}', [WorkspaceMemberController::class, 'destroy'])->name('dashboard.workspace.members.destroy');
 
     Route::get('/notifications', function () {
         return Inertia::render('Dashboard/Notifications/Index');
