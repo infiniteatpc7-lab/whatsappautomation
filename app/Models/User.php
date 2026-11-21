@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -13,9 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'current_workspace_id', 'phone', 'avatar_url'])]
+#[Fillable(['name', 'email', 'password', 'current_workspace_id', 'phone', 'avatar_url', 'email_verified_at'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -66,5 +66,29 @@ class User extends Authenticatable
     public function assignedConversations(): HasMany
     {
         return $this->hasMany(Conversation::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<EmailOtp, $this>
+     */
+    public function emailOtps(): HasMany
+    {
+        return $this->hasMany(EmailOtp::class);
+    }
+
+    /**
+     * @return HasMany<AuthLog, $this>
+     */
+    public function authLogs(): HasMany
+    {
+        return $this->hasMany(AuthLog::class);
+    }
+
+    /**
+     * @return HasMany<WorkspaceInvitation, $this>
+     */
+    public function sentInvitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class, 'invited_by');
     }
 }

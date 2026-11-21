@@ -114,4 +114,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'max_concurrent_sessions' => (int) env('AUTH_MAX_CONCURRENT_SESSIONS', 5),
+
 ];

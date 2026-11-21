@@ -1,8 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\EmailVerificationOtpController;
+use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SessionSecurityController;
 use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\WorkspaceInvitationController;
 use App\Http\Controllers\WorkspaceMemberController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -15,14 +21,40 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+    Route::post('/register', [RegisteredUserController::class, 'store'])
+        ->middleware('throttle:register')
+        ->name('register.store');
+
+    // Password reset via OTP
+    Route::post('/password/otp/send', [PasswordResetOtpController::class, 'send'])
+        ->middleware('throttle:5,15')
+        ->name('password.otp.send');
+    Route::post('/password/otp/reset', [PasswordResetOtpController::class, 'reset'])
+        ->middleware('throttle:10,15')
+        ->name('password.otp.reset');
 });
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware(['auth', 'workspace'])->prefix('dashboard')->group(function () {
+// Email verification OTP (requires auth, but unverified)
+Route::middleware('auth')->group(function () {
+    Route::get('/verify-email', [EmailVerificationOtpController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/otp/verify', [EmailVerificationOtpController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('verification.otp.verify');
+    Route::post('/email/otp/resend', [EmailVerificationOtpController::class, 'resend'])
+        ->name('verification.otp.resend');
+});
+
+// Workspace invitation acceptance (requires auth and verified email)
+Route::post('/invitations/{token}/accept', [WorkspaceInvitationController::class, 'accept'])
+    ->middleware(['auth', 'verified'])
+    ->name('invitations.accept');
+
+// Protected Dashboard routes (requires auth, verified email, and active workspace)
+Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group(function () {
     Route::get('/', function () {
         return redirect()->route('dashboard.overview');
     });
@@ -100,6 +132,9 @@ Route::middleware(['auth', 'workspace'])->prefix('dashboard')->group(function ()
         return Inertia::render('Dashboard/Account/Index');
     })->name('dashboard.account');
 
+    Route::post('/account/logout-other-devices', [SessionSecurityController::class, 'logoutOtherDevices'])
+        ->name('dashboard.account.logout-other-devices');
+
     Route::get('/workspace', [WorkspaceController::class, 'show'])->name('dashboard.workspace');
     Route::post('/workspace', [WorkspaceController::class, 'store'])->name('dashboard.workspace.store');
     Route::patch('/workspace/{workspace:uuid}', [WorkspaceController::class, 'update'])->name('dashboard.workspace.update');
@@ -108,6 +143,7 @@ Route::middleware(['auth', 'workspace'])->prefix('dashboard')->group(function ()
     Route::post('/workspace/members', [WorkspaceMemberController::class, 'store'])->name('dashboard.workspace.members.store');
     Route::patch('/workspace/members/{user}', [WorkspaceMemberController::class, 'update'])->name('dashboard.workspace.members.update');
     Route::delete('/workspace/members/{user}', [WorkspaceMemberController::class, 'destroy'])->name('dashboard.workspace.members.destroy');
+    Route::delete('/workspace/invitations/{invitation}', [WorkspaceInvitationController::class, 'destroy'])->name('dashboard.workspace.invitations.destroy');
 
     Route::get('/notifications', function () {
         return Inertia::render('Dashboard/Notifications/Index');

@@ -27,6 +27,10 @@ class UpdateWorkspaceRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:150'],
             'timezone' => ['sometimes', 'required', 'string', 'timezone:all'],
             'settings' => ['nullable', 'array'],
+            'settings.currency' => ['nullable', 'string', 'max:10'],
+            'settings.industry' => ['nullable', 'string', 'max:100'],
+            'settings.business_hours' => ['nullable', 'array'],
+            'settings.auto_assign_chats' => ['nullable', 'boolean'],
         ];
     }
 }

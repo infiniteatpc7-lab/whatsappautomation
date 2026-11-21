@@ -115,4 +115,12 @@ class Workspace extends Model
     {
         return $this->hasMany(AiAgent::class);
     }
+
+    /**
+     * @return HasMany<WorkspaceInvitation, $this>
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(WorkspaceInvitation::class);
+    }
 }

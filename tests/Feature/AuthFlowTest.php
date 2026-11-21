@@ -34,13 +34,13 @@ class AuthFlowTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'John Doe',
             'email' => 'john@example.com',
-            'password' => 'secret1234',
-            'password_confirmation' => 'secret1234',
+            'password' => 'Secret1234!',
+            'password_confirmation' => 'Secret1234!',
             'workspace_name' => 'Acme Corp',
             'phone' => '+919876543210',
         ]);
 
-        $response->assertRedirect('/dashboard/overview');
+        $response->assertRedirect('/verify-email');
 
         $this->assertAuthenticated();
 
@@ -73,7 +73,8 @@ class AuthFlowTest extends TestCase
         $user = User::create([
             'name' => 'Jane Doe',
             'email' => 'jane@example.com',
-            'password' => bcrypt('password123'),
+            'password' => bcrypt('Password123!'),
+            'email_verified_at' => now(),
         ]);
 
         $workspace = Workspace::create([
@@ -92,7 +93,7 @@ class AuthFlowTest extends TestCase
 
         $response = $this->post('/login', [
             'email' => 'jane@example.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
         ]);
 
         $response->assertRedirect('/dashboard/overview');

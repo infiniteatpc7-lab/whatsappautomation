@@ -38,7 +38,7 @@ class RegisterUserWithWorkspaceAction
 
             $slug = $baseSlug;
             $counter = 1;
-            while (Workspace::where('slug', $slug)->exists()) {
+            while (Workspace::withTrashed()->where('slug', $slug)->exists()) {
                 $slug = "{$baseSlug}-{$counter}";
                 $counter++;
             }

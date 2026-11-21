@@ -34,6 +34,7 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => "User {$name}",
             'email' => $userEmail,
             'password' => bcrypt('password123'),
+            'email_verified_at' => now(),
         ]);
 
         $workspace = Workspace::create([
@@ -149,6 +150,7 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => 'Agent Bob',
             'email' => 'bob@shop.com',
             'password' => bcrypt('password123'),
+            'email_verified_at' => now(),
             'current_workspace_id' => $workspace->id,
         ]);
 
@@ -186,6 +188,7 @@ class WorkspaceAndTenantIsolationTest extends TestCase
             'name' => 'Admin Alice',
             'email' => 'admin@hq.com',
             'password' => bcrypt('password123'),
+            'email_verified_at' => now(),
             'current_workspace_id' => $workspace->id,
         ]);
 

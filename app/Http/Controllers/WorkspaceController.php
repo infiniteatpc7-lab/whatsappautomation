@@ -95,7 +95,7 @@ class WorkspaceController extends Controller
 
             $slug = $baseSlug;
             $counter = 1;
-            while (Workspace::where('slug', $slug)->exists()) {
+            while (Workspace::withTrashed()->where('slug', $slug)->exists()) {
                 $slug = "{$baseSlug}-{$counter}";
                 $counter++;
             }
@@ -149,6 +149,13 @@ class WorkspaceController extends Controller
     public function update(UpdateWorkspaceRequest $request, Workspace $workspace): RedirectResponse
     {
         $validated = $request->validated();
+
+        if (isset($validated['settings']) && is_array($validated['settings'])) {
+            $allowedKeys = ['currency', 'industry', 'business_hours', 'auto_assign_chats'];
+            $existing = is_array($workspace->settings) ? $workspace->settings : [];
+            $filtered = array_intersect_key($validated['settings'], array_flip($allowedKeys));
+            $validated['settings'] = array_merge($existing, $filtered);
+        }
 
         $workspace->update($validated);
 

@@ -17,7 +17,8 @@ class CampaignPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->current_workspace_id !== null;
+        return $user->current_workspace_id !== null
+            && $user->workspaces()->where('workspaces.id', $user->current_workspace_id)->exists();
     }
 
     public function view(User $user, Campaign $campaign): bool
@@ -27,7 +28,8 @@ class CampaignPolicy
 
     public function create(User $user): bool
     {
-        return $user->current_workspace_id !== null;
+        return $user->current_workspace_id !== null
+            && $user->workspaces()->where('workspaces.id', $user->current_workspace_id)->exists();
     }
 
     public function update(User $user, Campaign $campaign): bool

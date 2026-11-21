@@ -9,9 +9,13 @@ use App\Http\Requests\Workspace\AddWorkspaceMemberRequest;
 use App\Http\Requests\Workspace\UpdateWorkspaceMemberRequest;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceInvitation;
+use App\Notifications\WorkspaceInvitationNotification;
 use App\Support\WorkspaceContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class WorkspaceMemberController extends Controller
@@ -37,31 +41,44 @@ class WorkspaceMemberController extends Controller
     {
         $workspace = $this->getActiveWorkspace($request);
         $validated = $request->validated();
+        $email = $validated['email'];
 
-        /** @var User $targetUser */
-        $targetUser = User::where('email', $validated['email'])->firstOrFail();
-
-        if ($workspace->users()->where('users.id', $targetUser->id)->exists()) {
+        // Check if user is already an active member of this workspace
+        if ($workspace->users()->where('users.email', $email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => 'User is already a member of this workspace.',
             ]);
         }
 
-        $workspace->users()->attach($targetUser->id, [
+        // Invalidate previous pending invitations for this email in this workspace
+        $workspace->invitations()
+            ->where('email', $email)
+            ->whereNull('accepted_at')
+            ->delete();
+
+        $plainToken = Str::random(64);
+        $tokenHash = hash('sha256', $plainToken);
+
+        $workspace->invitations()->create([
+            'invited_by' => $request->user()?->id,
+            'email' => $email,
             'role' => $validated['role'],
-            'is_available' => true,
+            'token_hash' => $tokenHash,
+            'expires_at' => now()->addDays(7),
         ]);
 
-        if (! $targetUser->current_workspace_id) {
-            $targetUser->forceFill(['current_workspace_id' => $workspace->id])->save();
-        }
+        Notification::route('mail', $email)
+            ->notify(new WorkspaceInvitationNotification($workspace, $plainToken, $validated['role']));
 
-        return back()->with('success', "{$targetUser->name} added to workspace.");
+        return back()->with('success', 'Invitation sent successfully.');
     }
 
     public function update(UpdateWorkspaceMemberRequest $request, User $user): RedirectResponse
     {
         $workspace = $this->getActiveWorkspace($request);
+
+        abort_unless($workspace->users()->where('users.id', $user->id)->exists(), 404);
+
         $validated = $request->validated();
 
         if ($workspace->owner_id === $user->id && isset($validated['role']) && $validated['role'] !== WorkspaceRole::OWNER->value) {
@@ -91,6 +108,8 @@ class WorkspaceMemberController extends Controller
         if (! $request->user()?->can('manageMembers', $workspace)) {
             abort(403, 'Unauthorized.');
         }
+
+        abort_unless($workspace->users()->where('users.id', $user->id)->exists(), 404);
 
         if ($workspace->owner_id === $user->id) {
             abort(422, 'Cannot remove the workspace owner.');

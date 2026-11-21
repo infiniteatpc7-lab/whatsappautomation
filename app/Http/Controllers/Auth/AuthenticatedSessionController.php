@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\AuthEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\AuthLog;
 use App\Models\User;
+use App\Services\Auth\SessionLimitService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -43,6 +46,9 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
+        $sessionId = $request->session()->getId();
+        app(SessionLimitService::class)->enforce($user, $sessionId);
+
         return redirect()->intended(route('dashboard.overview'));
     }
 
@@ -51,6 +57,23 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
+        if ($user) {
+            try {
+                AuthLog::create([
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'event' => AuthEvent::LOGOUT,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                    'created_at' => now(),
+                ]);
+            } catch (\Throwable) {
+                // Silently continue
+            }
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

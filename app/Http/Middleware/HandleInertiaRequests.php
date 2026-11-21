@@ -59,6 +59,7 @@ class HandleInertiaRequests extends Middleware
                         'phone' => $user->phone,
                         'avatar_url' => $user->avatar_url,
                         'current_workspace_id' => $user->current_workspace_id,
+                        'email_verified' => $user->hasVerifiedEmail(),
                     ];
                 },
                 'workspace' => function () use ($request): ?array {
