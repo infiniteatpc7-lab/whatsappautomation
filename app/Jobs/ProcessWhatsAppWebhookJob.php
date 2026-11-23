@@ -139,8 +139,9 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
         $profileName = $contactsMap[$from]['profile']['name'] ?? $contactsMap[$waId]['profile']['name'] ?? null;
 
         // Upsert Contact
-        /** @var Contact $contact */
-        $contact = Contact::where('workspace_id', $account->workspace_id)
+        /** @var Contact|null $contact */
+        $contact = Contact::withTrashed()
+            ->where('workspace_id', $account->workspace_id)
             ->where('wa_id', $waId)
             ->first();
 
@@ -154,6 +155,10 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
                 'opted_in_at' => now(),
             ]);
         } else {
+            if ($contact->trashed()) {
+                $contact->restore();
+            }
+
             $updates = [];
             if ($profileName && empty($contact->profile_name)) {
                 $updates['profile_name'] = $profileName;
@@ -437,16 +442,38 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
      */
     protected function processTemplateStatusUpdate(array $value, string $wabaId): void
     {
+        $accountIds = WhatsAppAccount::where('waba_id', $wabaId)->pluck('id');
+        if ($accountIds->isEmpty()) {
+            return;
+        }
+
         $metaTemplateId = (string) ($value['message_template_id'] ?? '');
         $templateName = (string) ($value['message_template_name'] ?? '');
         $language = (string) ($value['message_template_language'] ?? '');
         $event = strtoupper((string) ($value['event'] ?? ''));
         $reason = $value['reason'] ?? null;
 
-        $template = Template::where('meta_template_id', $metaTemplateId)
-            ->orWhere(function ($query) use ($templateName, $language) {
-                if ($templateName !== '' && $language !== '') {
-                    $query->where('name', $templateName)->where('language', $language);
+        $hasMetaId = $metaTemplateId !== '';
+        $hasNameLang = $templateName !== '' && $language !== '';
+
+        if (! $hasMetaId && ! $hasNameLang) {
+            return;
+        }
+
+        $template = Template::whereIn('whatsapp_account_id', $accountIds)
+            ->where(function ($query) use ($hasMetaId, $metaTemplateId, $hasNameLang, $templateName, $language) {
+                if ($hasMetaId) {
+                    $query->where('meta_template_id', $metaTemplateId);
+                }
+
+                if ($hasNameLang) {
+                    if ($hasMetaId) {
+                        $query->orWhere(function ($q) use ($templateName, $language) {
+                            $q->where('name', $templateName)->where('language', $language);
+                        });
+                    } else {
+                        $query->where('name', $templateName)->where('language', $language);
+                    }
                 }
             })
             ->first();
@@ -472,16 +499,38 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
      */
     protected function processTemplateCategoryUpdate(array $value, string $wabaId): void
     {
+        $accountIds = WhatsAppAccount::where('waba_id', $wabaId)->pluck('id');
+        if ($accountIds->isEmpty()) {
+            return;
+        }
+
         $metaTemplateId = (string) ($value['message_template_id'] ?? '');
         $templateName = (string) ($value['message_template_name'] ?? '');
         $language = (string) ($value['message_template_language'] ?? '');
         $newCategoryStr = strtoupper((string) ($value['new_category'] ?? ''));
         $prevCategoryStr = strtoupper((string) ($value['previous_category'] ?? ''));
 
-        $template = Template::where('meta_template_id', $metaTemplateId)
-            ->orWhere(function ($query) use ($templateName, $language) {
-                if ($templateName !== '' && $language !== '') {
-                    $query->where('name', $templateName)->where('language', $language);
+        $hasMetaId = $metaTemplateId !== '';
+        $hasNameLang = $templateName !== '' && $language !== '';
+
+        if (! $hasMetaId && ! $hasNameLang) {
+            return;
+        }
+
+        $template = Template::whereIn('whatsapp_account_id', $accountIds)
+            ->where(function ($query) use ($hasMetaId, $metaTemplateId, $hasNameLang, $templateName, $language) {
+                if ($hasMetaId) {
+                    $query->where('meta_template_id', $metaTemplateId);
+                }
+
+                if ($hasNameLang) {
+                    if ($hasMetaId) {
+                        $query->orWhere(function ($q) use ($templateName, $language) {
+                            $q->where('name', $templateName)->where('language', $language);
+                        });
+                    } else {
+                        $query->where('name', $templateName)->where('language', $language);
+                    }
                 }
             })
             ->first();

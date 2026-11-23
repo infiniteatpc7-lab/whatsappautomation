@@ -143,4 +143,37 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
         $this->assertNull(session('login.two_factor_user_id'));
     }
+
+    public function test_expired_2fa_session_redirects_back_to_login(): void
+    {
+        Notification::fake();
+        $user = $this->createUserWithWorkspace(true);
+
+        $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'Secret1234!',
+        ])->assertRedirect(route('two-factor.challenge'));
+
+        $this->assertNotNull(session('login.two_factor_user_id'));
+        $this->assertNotNull(session('login.two_factor_expires_at'));
+
+        // Fast forward 11 minutes
+        $this->travel(11)->minutes();
+
+        $response = $this->get('/two-factor-challenge');
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHas('error', 'Two-factor session expired. Please sign in again.');
+
+        $this->assertNull(session('login.two_factor_user_id'));
+        $this->assertNull(session('login.two_factor_expires_at'));
+
+        // Also verify POST /two-factor-challenge when expired
+        $this->withSession([
+            'login.two_factor_user_id' => $user->id,
+            'login.two_factor_expires_at' => now()->subMinute()->timestamp,
+        ])->post('/two-factor-challenge', [
+            'code' => '123456',
+        ])->assertRedirect(route('login'))
+            ->assertSessionHas('error', 'Two-factor session expired. Please sign in again.');
+    }
 }

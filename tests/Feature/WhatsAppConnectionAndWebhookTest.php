@@ -777,4 +777,264 @@ class WhatsAppConnectionAndWebhookTest extends TestCase
         $template->refresh();
         $this->assertEquals(TemplateStatus::APPROVED, $template->status);
     }
+
+    public function test_reconnecting_soft_deleted_account_restores_in_same_workspace_and_blocks_other_workspaces(): void
+    {
+        [$workspaceA, $ownerA] = $this->createWorkspaceWithUser('Org A', 'ownerA_reconnect@example.com');
+        [$workspaceB, $ownerB] = $this->createWorkspaceWithUser('Org B', 'ownerB_reconnect@example.com');
+
+        $account = $this->createAccount($workspaceA, [
+            'phone_number_id' => 'phone_soft_deleted_123',
+            'waba_id' => 'waba_orig',
+        ]);
+        $accountId = $account->id;
+
+        // Soft delete the account
+        $account->delete();
+        $this->assertSoftDeleted('whatsapp_accounts', ['id' => $accountId]);
+
+        // Workspace B attempts to register the same phone_number_id -> fails with validation exception
+        $resB = $this->actingAs($ownerB)
+            ->postJson('/dashboard/whatsapp-accounts', [
+                'waba_id' => 'waba_b_steal',
+                'phone_number_id' => 'phone_soft_deleted_123',
+                'display_phone_number' => '+15551239999',
+                'access_token' => 'EAAG_some_token_here_for_workspace_b',
+            ]);
+
+        $resB->assertUnprocessable();
+        $resB->assertJsonValidationErrors(['phone_number_id']);
+        $this->assertSoftDeleted('whatsapp_accounts', [
+            'id' => $accountId,
+            'workspace_id' => $workspaceA->id,
+        ]);
+
+        // Workspace A re-registers the same phone_number_id -> restores and updates in place
+        $resA = $this->actingAs($ownerA)
+            ->postJson('/dashboard/whatsapp-accounts', [
+                'waba_id' => 'waba_updated_a',
+                'phone_number_id' => 'phone_soft_deleted_123',
+                'display_phone_number' => '+15551238888',
+                'access_token' => 'EAAG_restored_new_token_string_here',
+            ]);
+
+        $resA->assertCreated();
+        $account->refresh();
+        $this->assertFalse($account->trashed());
+        $this->assertEquals($accountId, $account->id);
+        $this->assertEquals('waba_updated_a', $account->waba_id);
+        $this->assertEquals('+15551238888', $account->display_phone_number);
+    }
+
+    public function test_template_status_webhook_for_waba_a_does_not_overwrite_same_named_template_in_waba_b(): void
+    {
+        [$workspaceA, $ownerA] = $this->createWorkspaceWithUser('Org Tpl A', 'tplA@example.com');
+        [$workspaceB, $ownerB] = $this->createWorkspaceWithUser('Org Tpl B', 'tplB@example.com');
+
+        $accountA = $this->createAccount($workspaceA, ['waba_id' => 'waba_unique_aaa']);
+        $accountB = $this->createAccount($workspaceB, ['waba_id' => 'waba_unique_bbb']);
+
+        $templateA = Template::create([
+            'workspace_id' => $workspaceA->id,
+            'whatsapp_account_id' => $accountA->id,
+            'meta_template_id' => 'meta_tpl_aaa',
+            'name' => 'common_discount',
+            'language' => 'en_US',
+            'category' => TemplateCategory::MARKETING,
+            'status' => TemplateStatus::PENDING,
+            'body_text' => '20% off at A',
+        ]);
+
+        $templateB = Template::create([
+            'workspace_id' => $workspaceB->id,
+            'whatsapp_account_id' => $accountB->id,
+            'meta_template_id' => 'meta_tpl_bbb',
+            'name' => 'common_discount',
+            'language' => 'en_US',
+            'category' => TemplateCategory::MARKETING,
+            'status' => TemplateStatus::PENDING,
+            'body_text' => '20% off at B',
+        ]);
+
+        // Webhook for WABA A approving 'common_discount'
+        $payload = [
+            'entry' => [
+                [
+                    'id' => 'waba_unique_aaa',
+                    'changes' => [
+                        [
+                            'field' => 'message_template_status_update',
+                            'value' => [
+                                'message_template_name' => 'common_discount',
+                                'message_template_language' => 'en_US',
+                                'event' => 'APPROVED',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $log = WebhookLog::create(['payload' => $payload, 'created_at' => now()]);
+        (new ProcessWhatsAppWebhookJob($log->id))->handle();
+
+        $templateA->refresh();
+        $templateB->refresh();
+
+        $this->assertEquals(TemplateStatus::APPROVED, $templateA->status);
+        $this->assertEquals(TemplateStatus::PENDING, $templateB->status);
+    }
+
+    public function test_template_webhook_signed_with_per_account_secret_passes_verify_meta_signature(): void
+    {
+        config(['services.meta.app_secret' => '']); // ensure no global secret used
+
+        [$workspace, $owner] = $this->createWorkspaceWithUser('Org Sec', 'sec@example.com');
+        $perAccountSecret = 'per_account_secret_string_123';
+        $wabaId = 'waba_sec_777';
+
+        $this->createAccount($workspace, [
+            'waba_id' => $wabaId,
+            'app_secret' => $perAccountSecret,
+        ]);
+
+        // Template status payload has entry.0.id = waba_id, but NO metadata.phone_number_id
+        $payload = [
+            'object' => 'whatsapp_business_account',
+            'entry' => [
+                [
+                    'id' => $wabaId,
+                    'changes' => [
+                        [
+                            'field' => 'message_template_status_update',
+                            'value' => [
+                                'message_template_id' => 'meta_123',
+                                'message_template_name' => 'welcome_offer',
+                                'message_template_language' => 'en_US',
+                                'event' => 'APPROVED',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $jsonPayload = json_encode($payload);
+        $signature = 'sha256='.hash_hmac('sha256', (string) $jsonPayload, $perAccountSecret);
+
+        $response = $this->call(
+            'POST',
+            '/api/webhooks/whatsapp',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_HUB_SIGNATURE_256' => $signature,
+            ],
+            (string) $jsonPayload
+        );
+
+        $response->assertOk();
+    }
+
+    public function test_inbound_message_from_soft_deleted_contact_restores_contact(): void
+    {
+        [$workspace, $owner] = $this->createWorkspaceWithUser('Org Contact', 'contact@example.com');
+        $account = $this->createAccount($workspace, ['phone_number_id' => 'phone_contact_test']);
+
+        $contact = Contact::create([
+            'workspace_id' => $workspace->id,
+            'wa_id' => '15559876543',
+            'profile_name' => 'Alice Inbound',
+            'source' => 'manual',
+        ]);
+
+        $contact->delete();
+        $this->assertTrue($contact->trashed());
+
+        $payload = [
+            'entry' => [
+                [
+                    'id' => $account->waba_id,
+                    'changes' => [
+                        [
+                            'field' => 'messages',
+                            'value' => [
+                                'messaging_product' => 'whatsapp',
+                                'metadata' => [
+                                    'display_phone_number' => '+15551234567',
+                                    'phone_number_id' => 'phone_contact_test',
+                                ],
+                                'contacts' => [
+                                    [
+                                        'profile' => ['name' => 'Alice Inbound'],
+                                        'wa_id' => '15559876543',
+                                    ],
+                                ],
+                                'messages' => [
+                                    [
+                                        'from' => '15559876543',
+                                        'id' => 'wamid_restored_contact_msg',
+                                        'timestamp' => (string) time(),
+                                        'text' => ['body' => 'Hello again!'],
+                                        'type' => 'text',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $log = WebhookLog::create(['payload' => $payload, 'created_at' => now()]);
+        (new ProcessWhatsAppWebhookJob($log->id))->handle();
+
+        $contact->refresh();
+        $this->assertFalse($contact->trashed());
+        $this->assertDatabaseHas('messages', [
+            'wamid' => 'wamid_restored_contact_msg',
+        ]);
+        $this->assertDatabaseHas('conversations', [
+            'contact_id' => $contact->id,
+            'whatsapp_account_id' => $account->id,
+        ]);
+    }
+
+    public function test_agent_role_does_not_receive_webhook_verify_token_on_workspace_page(): void
+    {
+        [$workspace, $owner] = $this->createWorkspaceWithUser('Org Perms', 'owner_perms@example.com', WorkspaceRole::OWNER);
+        $this->createAccount($workspace, [
+            'webhook_verify_token' => 'super_secret_verify_token_999',
+        ]);
+
+        // Owner sees the verify token
+        $ownerRes = $this->actingAs($owner)->get('/dashboard/workspace');
+        $ownerRes->assertOk();
+        $ownerRes->assertInertia(fn ($page) => $page
+            ->component('Dashboard/Workspace')
+            ->where('whatsappAccount.webhook_verify_token', 'super_secret_verify_token_999')
+        );
+
+        // Create an Agent user in the same workspace
+        $agent = User::create([
+            'name' => 'Agent Perms',
+            'email' => 'agent_perms@example.com',
+            'password' => bcrypt('Secret1234!'),
+        ]);
+        $agent->forceFill(['email_verified_at' => now(), 'current_workspace_id' => $workspace->id])->save();
+        $workspace->users()->attach($agent->id, [
+            'role' => WorkspaceRole::AGENT->value,
+            'is_available' => true,
+        ]);
+
+        // Agent should receive NULL for webhook_verify_token
+        $agentRes = $this->actingAs($agent)->get('/dashboard/workspace');
+        $agentRes->assertOk();
+        $agentRes->assertInertia(fn ($page) => $page
+            ->component('Dashboard/Workspace')
+            ->where('whatsappAccount.webhook_verify_token', null)
+        );
+    }
 }

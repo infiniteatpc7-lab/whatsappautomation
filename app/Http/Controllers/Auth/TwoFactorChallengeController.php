@@ -26,14 +26,29 @@ class TwoFactorChallengeController extends Controller
     public function create(Request $request): Response|RedirectResponse
     {
         $userId = $request->session()->get('login.two_factor_user_id');
+        $expiresAt = $request->session()->get('login.two_factor_expires_at');
 
         if (! $userId) {
             return redirect()->route('login');
         }
 
+        if ($expiresAt && now()->timestamp > $expiresAt) {
+            $request->session()->forget([
+                'login.two_factor_user_id',
+                'login.two_factor_remember',
+                'login.two_factor_expires_at',
+            ]);
+
+            return redirect()->route('login')->with('error', 'Two-factor session expired. Please sign in again.');
+        }
+
         $user = User::find($userId);
         if (! $user) {
-            $request->session()->forget(['login.two_factor_user_id', 'login.two_factor_remember']);
+            $request->session()->forget([
+                'login.two_factor_user_id',
+                'login.two_factor_remember',
+                'login.two_factor_expires_at',
+            ]);
 
             return redirect()->route('login');
         }
@@ -53,9 +68,20 @@ class TwoFactorChallengeController extends Controller
     public function store(Request $request, EmailOtpService $otpService): RedirectResponse|JsonResponse
     {
         $userId = $request->session()->get('login.two_factor_user_id');
+        $expiresAt = $request->session()->get('login.two_factor_expires_at');
 
         if (! $userId) {
             return redirect()->route('login');
+        }
+
+        if ($expiresAt && now()->timestamp > $expiresAt) {
+            $request->session()->forget([
+                'login.two_factor_user_id',
+                'login.two_factor_remember',
+                'login.two_factor_expires_at',
+            ]);
+
+            return redirect()->route('login')->with('error', 'Two-factor session expired. Please sign in again.');
         }
 
         $user = User::findOrFail($userId);
@@ -72,7 +98,10 @@ class TwoFactorChallengeController extends Controller
         );
 
         $remember = (bool) $request->session()->pull('login.two_factor_remember', false);
-        $request->session()->forget('login.two_factor_user_id');
+        $request->session()->forget([
+            'login.two_factor_user_id',
+            'login.two_factor_expires_at',
+        ]);
 
         Auth::login($user, $remember);
         $request->session()->regenerate();
@@ -102,9 +131,20 @@ class TwoFactorChallengeController extends Controller
     public function resend(Request $request, EmailOtpService $otpService): RedirectResponse|JsonResponse
     {
         $userId = $request->session()->get('login.two_factor_user_id');
+        $expiresAt = $request->session()->get('login.two_factor_expires_at');
 
         if (! $userId) {
             return redirect()->route('login');
+        }
+
+        if ($expiresAt && now()->timestamp > $expiresAt) {
+            $request->session()->forget([
+                'login.two_factor_user_id',
+                'login.two_factor_remember',
+                'login.two_factor_expires_at',
+            ]);
+
+            return redirect()->route('login')->with('error', 'Two-factor session expired. Please sign in again.');
         }
 
         $user = User::findOrFail($userId);

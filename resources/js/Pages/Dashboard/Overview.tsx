@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import PageContainer from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,8 +24,7 @@ export default function Overview() {
   const isWhatsAppConnected = Boolean(auth.workspace?.has_whatsapp);
 
   return (
-    <DashboardLayout>
-      <PageContainer>
+    <PageContainer>
         <div className='flex flex-1 flex-col gap-4'>
           {!isWhatsAppConnected && (
             <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-[#25D366]/5 dark:bg-[#25D366]/10'>
@@ -158,6 +156,5 @@ export default function Overview() {
           </div>
         </div>
       </PageContainer>
-    </DashboardLayout>
   );
 }

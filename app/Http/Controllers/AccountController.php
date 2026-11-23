@@ -60,6 +60,7 @@ class AccountController extends Controller
     {
         $validated = $request->validate([
             'enabled' => ['required', 'boolean'],
+            'current_password' => ['nullable', 'string', 'current_password'],
         ]);
 
         /** @var User $user */

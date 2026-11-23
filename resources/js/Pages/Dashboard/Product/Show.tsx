@@ -1,16 +1,13 @@
 import React from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import PageContainer from '@/components/layout/page-container';
 import ProductViewPage from '@/features/products/components/product-view-page';
 
 export default function ProductShowPage({ productId = 'new' }: { productId?: string }) {
   return (
-    <DashboardLayout>
-      <PageContainer>
-        <div className='flex-1 space-y-4'>
-          <ProductViewPage productId={productId} />
-        </div>
-      </PageContainer>
-    </DashboardLayout>
+    <PageContainer>
+      <div className='flex-1 space-y-4'>
+        <ProductViewPage productId={productId} />
+      </div>
+    </PageContainer>
   );
 }

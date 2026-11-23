@@ -6,6 +6,7 @@ import { NuqsAdapter } from 'nuqs/adapters/react';
 import ThemeProvider from '@/components/themes/theme-provider';
 import Providers from '@/components/layout/providers';
 import { Toaster } from '@/components/ui/sonner';
+import DashboardLayout from '@/components/layout/dashboard-layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel Shadcn Dashboard';
 
@@ -16,6 +17,9 @@ createInertiaApp({
     const page = pages[`./Pages/${name}.tsx`];
     if (!page) {
       throw new Error(`Page ${name} not found in ./Pages/`);
+    }
+    if (page.default && page.default.layout === undefined && name.startsWith('Dashboard/')) {
+      page.default.layout = (children) => <DashboardLayout>{children}</DashboardLayout>;
     }
     return page;
   },

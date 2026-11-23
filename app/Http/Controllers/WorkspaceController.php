@@ -57,6 +57,7 @@ class WorkspaceController extends Controller
 
         /** @var WhatsAppAccount|null $account */
         $account = $workspace->whatsappAccounts()->first();
+        $canManageWhatsApp = $user->can('manageWhatsAppAccounts', $workspace);
 
         $whatsappAccount = $account ? [
             'id' => $account->id,
@@ -68,8 +69,8 @@ class WorkspaceController extends Controller
             'verified_name' => $account->verified_name,
             'quality_rating' => $account->quality_rating,
             'tier' => $account->messaging_limit_tier,
-            'webhook_verify_token' => $account->webhook_verify_token,
-            'webhook_url' => rtrim((string) config('app.url', url('/')), '/') . '/api/webhooks/whatsapp',
+            'webhook_verify_token' => $canManageWhatsApp ? $account->webhook_verify_token : null,
+            'webhook_url' => rtrim((string) config('app.url', url('/')), '/').'/api/webhooks/whatsapp',
             'last_synced_at' => $account->last_synced_at?->diffForHumans() ?? $account->last_synced_at?->toISOString(),
             'has_access_token' => ! empty($account->access_token),
             'has_app_secret' => ! empty($account->app_secret),

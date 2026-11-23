@@ -1,5 +1,4 @@
 import React from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Messenger } from '@/features/chat/components/messenger';
 import { WhatsAppLockedState } from '@/components/whatsapp-locked-state';
 import { usePage } from '@inertiajs/react';
@@ -10,17 +9,15 @@ export default function ChatPage() {
   const isWhatsAppConnected = Boolean(auth.workspace?.has_whatsapp);
 
   return (
-    <DashboardLayout>
-      <div className='flex min-h-0 flex-1 p-4 md:p-6'>
-        {isWhatsAppConnected ? (
-          <Messenger />
-        ) : (
-          <WhatsAppLockedState
-            featureName='WhatsApp Live Chat'
-            description='To send and receive WhatsApp messages from customers in real-time, connect your Meta WhatsApp Cloud API credentials in Workspace settings.'
-          />
-        )}
-      </div>
-    </DashboardLayout>
+    <div className='flex min-h-0 flex-1 p-4 md:p-6'>
+      {isWhatsAppConnected ? (
+        <Messenger />
+      ) : (
+        <WhatsAppLockedState
+          featureName='WhatsApp Live Chat'
+          description='To send and receive WhatsApp messages from customers in real-time, connect your Meta WhatsApp Cloud API credentials in Workspace settings.'
+        />
+      )}
+    </div>
   );
 }

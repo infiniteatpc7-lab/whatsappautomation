@@ -17,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class WhatsAppAccountController extends Controller
 {
@@ -48,7 +49,7 @@ class WhatsAppAccountController extends Controller
                 'messaging_limit_tier' => $a->messaging_limit_tier,
                 'status' => $a->status->value,
                 'last_synced_at' => $a->last_synced_at?->toISOString(),
-                'webhook_url' => rtrim((string) config('app.url', url('/')), '/') . '/api/webhooks/whatsapp',
+                'webhook_url' => rtrim((string) config('app.url', url('/')), '/').'/api/webhooks/whatsapp',
                 'has_access_token' => ! empty($a->access_token),
                 'has_app_secret' => ! empty($a->app_secret),
             ]);
@@ -64,26 +65,51 @@ class WhatsAppAccountController extends Controller
         $workspace = $workspaceContext->getWorkspace();
         $validated = $request->validated();
 
-        // If a previously soft-deleted account exists with this phone_number_id, clean it up
-        WhatsAppAccount::withTrashed()
+        /** @var WhatsAppAccount|null $trashedAccount */
+        $trashedAccount = WhatsAppAccount::onlyTrashed()
             ->where('phone_number_id', $validated['phone_number_id'])
-            ->forceDelete();
+            ->first();
 
-        $account = WhatsAppAccount::create([
-            'workspace_id' => $workspace->id,
-            'connection_type' => WhatsAppConnectionType::MANUAL,
-            'waba_id' => $validated['waba_id'],
-            'phone_number_id' => $validated['phone_number_id'],
-            'display_phone_number' => $validated['display_phone_number'],
-            'access_token' => $validated['access_token'],
-            'app_secret' => $validated['app_secret'] ?? null,
-            'webhook_verify_token' => ! empty($validated['webhook_verify_token'])
-                ? $validated['webhook_verify_token']
-                : Str::random(40),
-            'business_portfolio_id' => $validated['business_portfolio_id'] ?? null,
-            'is_coexistence' => (bool) ($validated['is_coexistence'] ?? false),
-            'status' => WhatsAppAccountStatus::PENDING,
-        ]);
+        if ($trashedAccount) {
+            if ($trashedAccount->workspace_id !== $workspace->id) {
+                throw ValidationException::withMessages([
+                    'phone_number_id' => 'This Phone Number ID is already registered.',
+                ]);
+            }
+
+            $trashedAccount->restore();
+            $trashedAccount->update([
+                'connection_type' => WhatsAppConnectionType::MANUAL,
+                'waba_id' => $validated['waba_id'],
+                'display_phone_number' => $validated['display_phone_number'],
+                'access_token' => $validated['access_token'],
+                'app_secret' => $validated['app_secret'] ?? null,
+                'webhook_verify_token' => ! empty($validated['webhook_verify_token'])
+                    ? $validated['webhook_verify_token']
+                    : ($trashedAccount->webhook_verify_token ?: Str::random(40)),
+                'business_portfolio_id' => $validated['business_portfolio_id'] ?? null,
+                'is_coexistence' => (bool) ($validated['is_coexistence'] ?? false),
+                'status' => WhatsAppAccountStatus::PENDING,
+            ]);
+
+            $account = $trashedAccount;
+        } else {
+            $account = WhatsAppAccount::create([
+                'workspace_id' => $workspace->id,
+                'connection_type' => WhatsAppConnectionType::MANUAL,
+                'waba_id' => $validated['waba_id'],
+                'phone_number_id' => $validated['phone_number_id'],
+                'display_phone_number' => $validated['display_phone_number'],
+                'access_token' => $validated['access_token'],
+                'app_secret' => $validated['app_secret'] ?? null,
+                'webhook_verify_token' => ! empty($validated['webhook_verify_token'])
+                    ? $validated['webhook_verify_token']
+                    : Str::random(40),
+                'business_portfolio_id' => $validated['business_portfolio_id'] ?? null,
+                'is_coexistence' => (bool) ($validated['is_coexistence'] ?? false),
+                'status' => WhatsAppAccountStatus::PENDING,
+            ]);
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

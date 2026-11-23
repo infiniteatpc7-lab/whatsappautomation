@@ -37,6 +37,19 @@ class VerifyMetaSignature
             }
         }
 
+        // Check for WABA ID in entry.0.id for template/WABA-level webhooks
+        $entryId = $request->input('entry.0.id');
+        if ($entryId) {
+            $accounts = WhatsAppAccount::where('waba_id', (string) $entryId)
+                ->whereNotNull('app_secret')
+                ->get();
+            foreach ($accounts as $account) {
+                if (! empty($account->app_secret) && ! in_array($account->app_secret, $candidateSecrets, true)) {
+                    $candidateSecrets[] = $account->app_secret;
+                }
+            }
+        }
+
         // Global app secret
         $globalSecret = (string) config('services.meta.app_secret', '');
         if ($globalSecret !== '') {

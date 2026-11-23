@@ -46,6 +46,7 @@ class AuthenticatedSessionController extends Controller
 
             $request->session()->put('login.two_factor_user_id', $user->id);
             $request->session()->put('login.two_factor_remember', $remember);
+            $request->session()->put('login.two_factor_expires_at', now()->addMinutes(10)->timestamp);
 
             try {
                 app(EmailOtpService::class)->issue($user, OtpPurpose::TWO_FACTOR, $request->ip());

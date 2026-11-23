@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import DashboardLayout from '@/components/layout/dashboard-layout';
 import { CrosshairContainer, CrosshairRow } from '@/components/ui/crosshair-grid';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,8 +163,7 @@ export default function AccountIndex({ user: initialUser, devices = [] }: Accoun
   };
 
   return (
-    <DashboardLayout>
-      <div className='flex-1 w-full bg-background min-h-full py-8 md:py-12'>
+    <div className='flex-1 w-full bg-background min-h-full py-8 md:py-12'>
         <CrosshairContainer>
           {/* Header Row */}
           <CrosshairRow hasTopCrosshair className='pb-8'>
@@ -637,6 +635,5 @@ export default function AccountIndex({ user: initialUser, devices = [] }: Accoun
     </CrosshairRow>
       </CrosshairContainer >
     </div >
-    </DashboardLayout >
   );
 }

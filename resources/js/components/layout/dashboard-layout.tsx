@@ -1,4 +1,5 @@
 import React, { CSSProperties } from 'react';
+import { usePage } from '@inertiajs/react';
 import KBar from '@/components/kbar';
 import AppSidebar from '@/components/layout/app-sidebar';
 import Header from '@/components/layout/header';
@@ -6,6 +7,8 @@ import { InfobarProvider } from '@/components/ui/infobar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { url } = usePage();
+
   return (
     <KBar>
       <SidebarProvider
@@ -31,7 +34,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               data-slot='page-scroller'
               className='flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto'
             >
-              {children}
+              <div key={url} className='flex min-h-0 min-w-0 flex-1 flex-col animate-in fade-in-50 duration-200'>
+                {children}
+              </div>
             </div>
           </InfobarProvider>
         </SidebarInset>

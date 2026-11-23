@@ -94,7 +94,6 @@ class HandleInertiaRequests extends Middleware
                         'plan' => $workspace->plan instanceof WorkspacePlan ? $workspace->plan->value : (string) $workspace->plan,
                         'role' => $role,
                         'has_whatsapp' => $workspace->whatsappAccounts()->where('status', WhatsAppAccountStatus::CONNECTED)->exists(),
-                        'has_whatsapp' => $workspace->whatsappAccounts()->where('status', \App\Enums\WhatsAppAccountStatus::CONNECTED)->exists(),
                     ];
                 },
                 'workspaces' => function () use ($request): array {
@@ -123,6 +122,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn (): mixed => $request->session()->get('success'),
                 'error' => fn (): mixed => $request->session()->get('error'),
+                'status' => fn (): mixed => $request->session()->get('status'),
             ],
         ];
     }

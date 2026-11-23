@@ -1,5 +1,6 @@
 'use client';
 import React, { useRef, useLayoutEffect } from 'react';
+import { LayoutGroup, motion } from 'motion/react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   DropdownMenu,
@@ -171,20 +172,22 @@ export default function AppSidebar() {
         onScroll={handleScroll}
         className='overflow-y-auto overflow-x-hidden'
       >
-        {filteredGroups.map((group) => (
-          <SidebarGroup key={group.label || 'ungrouped'} className='px-0 py-2'>
-            {group.label && (
-              <SidebarGroupLabel className='h-auto font-medium font-mono text-muted-foreground text-xs uppercase leading-4 tracking-widest px-4 pt-4 pb-1.5'>
-                {group.label}
-              </SidebarGroupLabel>
-            )}
-            <SidebarMenu className='gap-0.5'>
-              {group.items.map((item) => (
-                <NavMainItem key={item.title} item={item} pathname={pathname} />
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
-        ))}
+        <LayoutGroup id='sidebar-nav'>
+          {filteredGroups.map((group) => (
+            <SidebarGroup key={group.label || 'ungrouped'} className='px-0 py-2'>
+              {group.label && (
+                <SidebarGroupLabel className='h-auto font-medium font-mono text-muted-foreground text-xs uppercase leading-4 tracking-widest px-4 pt-4 pb-1.5'>
+                  {group.label}
+                </SidebarGroupLabel>
+              )}
+              <SidebarMenu className='gap-0.5'>
+                {group.items.map((item) => (
+                  <NavMainItem key={item.title} item={item} pathname={pathname} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroup>
+          ))}
+        </LayoutGroup>
       </SidebarContent>
 
       <SidebarFooter className='p-2 border-t border-sidebar-border/40 gap-2'>
@@ -305,15 +308,28 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
           className={cn(
             'relative h-8 w-full min-w-0 items-center gap-2.5 rounded-none px-4 text-sm font-normal text-muted-foreground transition-colors duration-150',
             'hover:bg-foreground/5 hover:text-foreground',
-            'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
-            'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100',
-            'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0'
+            'data-active:text-foreground data-active:font-medium',
+            'group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:h-9! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center overflow-hidden'
           )}
         >
-          <Icon className='size-4 shrink-0' />
-          <span className='truncate text-sm'>{item.title}</span>
+          {active && (
+            <>
+              <motion.div
+                layoutId='sidebar-active-pill'
+                className='absolute inset-0 bg-foreground/[0.07] z-0'
+                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              />
+              <motion.div
+                layoutId='sidebar-active-bar'
+                className='absolute inset-y-0 end-0 w-0.5 bg-foreground z-10'
+                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+              />
+            </>
+          )}
+          <Icon className='size-4 shrink-0 relative z-10' />
+          <span className='truncate text-sm relative z-10 group-data-[collapsible=icon]:hidden'>{item.title}</span>
           {item.badge && (
-            <span className='ml-auto font-mono text-xs font-normal tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden'>
+            <span className='ml-auto font-mono text-xs font-normal tracking-wider text-muted-foreground uppercase group-data-[collapsible=icon]:hidden relative z-10'>
               {item.badge}
             </span>
           )}
@@ -337,15 +353,29 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                 className={cn(
                   'relative h-8 w-full min-w-0 justify-center rounded-none px-0 text-sm font-normal text-muted-foreground transition-colors duration-150',
                   'hover:bg-foreground/5 hover:text-foreground',
-                  'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
-                  'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100',
+                  'data-active:text-foreground data-active:font-medium',
+                  'group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:h-9! group-data-[collapsible=icon]:p-0! overflow-hidden',
                   'data-popup-open:bg-foreground/5 data-popup-open:text-foreground'
                 )}
               />
             }
           >
-            <Icon className='size-4 shrink-0' />
-            <span className='truncate text-sm'>{item.title}</span>
+            {hasActiveChild && (
+              <>
+                <motion.div
+                  layoutId='sidebar-active-pill'
+                  className='absolute inset-0 bg-foreground/[0.07] z-0'
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+                <motion.div
+                  layoutId='sidebar-active-bar'
+                  className='absolute inset-y-0 end-0 w-0.5 bg-foreground z-10'
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              </>
+            )}
+            <Icon className='size-4 shrink-0 relative z-10' />
+            <span className='truncate text-sm relative z-10 group-data-[collapsible=icon]:hidden'>{item.title}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             side='right'
@@ -420,20 +450,34 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
             className={cn(
               'group/collapsible relative h-8 w-full min-w-0 items-center gap-2.5 rounded-none px-4 text-sm font-normal text-muted-foreground transition-colors duration-150',
               'hover:bg-foreground/5 hover:text-foreground',
-              'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
-              'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100'
+              'data-active:text-foreground data-active:font-medium',
+              'group-data-[collapsible=icon]:w-full! group-data-[collapsible=icon]:h-9! group-data-[collapsible=icon]:p-0! group-data-[collapsible=icon]:justify-center overflow-hidden'
             )}
           />
         }
       >
-        {item.icon && <Icon className='size-4 shrink-0' />}
-        <span className='truncate text-sm'>{item.title}</span>
+        {(pathname === item.url || hasActiveChild) && (
+          <>
+            <motion.div
+              layoutId='sidebar-active-pill'
+              className='absolute inset-0 bg-foreground/[0.07] z-0'
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            />
+            <motion.div
+              layoutId='sidebar-active-bar'
+              className='absolute inset-y-0 end-0 w-0.5 bg-foreground z-10'
+              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+            />
+          </>
+        )}
+        {item.icon && <Icon className='size-4 shrink-0 relative z-10' />}
+        <span className='truncate text-sm relative z-10 group-data-[collapsible=icon]:hidden'>{item.title}</span>
         {item.badge && (
-          <span className='ml-auto mr-1 font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none'>
+          <span className='ml-auto mr-1 font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none relative z-10 group-data-[collapsible=icon]:hidden'>
             {item.badge}
           </span>
         )}
-        <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-panel-open/collapsible:rotate-90' />
+        <Icons.chevronRight className='ml-auto transition-transform duration-200 group-data-panel-open/collapsible:rotate-90 relative z-10 group-data-[collapsible=icon]:hidden' />
       </CollapsibleTrigger>
       <CollapsibleContent>
         <SidebarMenuSub className='mx-0 my-0 border-l-0 px-0 pl-6'>
@@ -458,13 +502,26 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                   className={cn(
                     'relative h-8 w-full min-w-0 rounded-none px-4 text-sm text-muted-foreground transition-colors duration-150',
                     'hover:bg-foreground/5 hover:text-foreground',
-                    'data-active:bg-foreground/[0.07] data-active:text-foreground data-active:font-medium',
-                    'before:absolute before:inset-y-0 before:end-0 before:w-0.5 before:bg-foreground before:opacity-0 data-active:before:opacity-100'
+                    'data-active:text-foreground data-active:font-medium overflow-hidden'
                   )}
                 >
-                  <span className='truncate text-sm'>{child.title}</span>
+                  {childActive && (
+                    <>
+                      <motion.div
+                        layoutId='sidebar-sub-active-pill'
+                        className='absolute inset-0 bg-foreground/[0.07] z-0'
+                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      />
+                      <motion.div
+                        layoutId='sidebar-sub-active-bar'
+                        className='absolute inset-y-0 end-0 w-0.5 bg-foreground z-10'
+                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      />
+                    </>
+                  )}
+                  <span className='truncate text-sm relative z-10'>{child.title}</span>
                   {child.badge && (
-                    <span className='ml-auto font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none'>
+                    <span className='ml-auto font-mono text-[10px] text-muted-foreground/80 tracking-widest uppercase leading-none relative z-10'>
                       {child.badge}
                     </span>
                   )}
