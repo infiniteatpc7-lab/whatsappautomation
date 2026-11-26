@@ -2,7 +2,24 @@
 set -e
 
 APP_DIR="/home/u943120118/domains/jeniferdecor.in/public_html/wa"
+
+# Auto-detect PHP 8.4+ binary on Hostinger (fallback to /usr/bin/php)
 PHP_BIN="/usr/bin/php"
+for candidate in \
+  /opt/alt/php84/usr/bin/php \
+  /opt/alt/php85/usr/bin/php \
+  /opt/alt/php83/usr/bin/php \
+  /usr/bin/php8.4 \
+  /usr/bin/php84 \
+  /usr/bin/php8.3 \
+  /usr/bin/php83; do
+  if [ -x "$candidate" ]; then
+    PHP_BIN="$candidate"
+    break
+  fi
+done
+
+echo "Using PHP binary: $PHP_BIN ($($PHP_BIN -r 'echo PHP_VERSION;'))"
 
 cd "$APP_DIR"
 
