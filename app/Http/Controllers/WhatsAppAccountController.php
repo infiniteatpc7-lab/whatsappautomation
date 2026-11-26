@@ -170,11 +170,15 @@ class WhatsAppAccountController extends Controller
         try {
             $data = $client->verifyPhoneNumber($whatsappAccount->phone_number_id, $whatsappAccount->access_token);
 
+            $messagingLimit = $data['whatsapp_business_manager_messaging_limit']
+                ?? $data['messaging_limit_tier']
+                ?? $whatsappAccount->messaging_limit_tier;
+
             $whatsappAccount->update([
                 'display_phone_number' => $data['display_phone_number'] ?? $whatsappAccount->display_phone_number,
                 'verified_name' => $data['verified_name'] ?? $whatsappAccount->verified_name,
                 'quality_rating' => $data['quality_rating'] ?? $whatsappAccount->quality_rating,
-                'messaging_limit_tier' => $data['messaging_limit_tier'] ?? $whatsappAccount->messaging_limit_tier,
+                'messaging_limit_tier' => $messagingLimit ? (string) $messagingLimit : null,
                 'status' => WhatsAppAccountStatus::CONNECTED,
                 'last_synced_at' => now(),
             ]);
@@ -212,20 +216,20 @@ class WhatsAppAccountController extends Controller
     }
 
     /**
-     * Soft delete a WhatsApp account.
+     * Delete and disconnect a WhatsApp account, permanently purging its credentials and data.
      */
     public function destroy(Request $request, WhatsAppAccount $whatsappAccount): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $whatsappAccount);
 
-        $whatsappAccount->delete();
+        $whatsappAccount->forceDelete();
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => 'WhatsApp account removed successfully.',
+                'message' => 'WhatsApp account disconnected and removed successfully.',
             ]);
         }
 
-        return back()->with('success', 'WhatsApp account removed successfully.');
+        return back()->with('success', 'WhatsApp account disconnected and removed successfully.');
     }
 }

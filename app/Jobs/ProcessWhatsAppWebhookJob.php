@@ -320,6 +320,27 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
         if ($mediaMetaId) {
             DownloadWhatsAppMediaJob::dispatch($message->id)->onQueue('webhooks');
         }
+
+        // Increment campaign replied_count if this contact is replying to a recent broadcast
+        $lastCampaignMessage = Message::query()
+            ->where('conversation_id', $conversation->id)
+            ->where('direction', MessageDirection::OUTBOUND)
+            ->whereNotNull('campaign_id')
+            ->latest('id')
+            ->first();
+
+        if ($lastCampaignMessage && $lastCampaignMessage->created_at?->greaterThan(now()->subDays(7))) {
+            $alreadyReplied = Message::query()
+                ->where('conversation_id', $conversation->id)
+                ->where('direction', MessageDirection::INBOUND)
+                ->where('id', '<', $message->id)
+                ->where('id', '>', $lastCampaignMessage->id)
+                ->exists();
+
+            if (! $alreadyReplied) {
+                $lastCampaignMessage->campaign?->increment('replied_count');
+            }
+        }
     }
 
     /**
@@ -401,7 +422,13 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             ->first();
 
         if ($recipient) {
-            $this->advanceCampaignRecipient($recipient, $incomingStatus, $date);
+            $this->advanceCampaignRecipient(
+                $recipient,
+                $incomingStatus,
+                $date,
+                $updates['error_code'] ?? null,
+                $updates['error_message'] ?? null
+            );
         }
     }
 
@@ -412,6 +439,8 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
         CampaignRecipient $recipient,
         MessageStatus $incomingStatus,
         Carbon $date,
+        ?string $errorCode = null,
+        ?string $errorMessage = null,
     ): void {
         $campaign = $recipient->campaign;
 
@@ -428,8 +457,19 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             ]);
             $campaign?->increment('read_count');
         } elseif ($incomingStatus === MessageStatus::FAILED && $recipient->status !== RecipientStatus::FAILED && $recipient->status !== RecipientStatus::DELIVERED && $recipient->status !== RecipientStatus::READ) {
+            if ($recipient->scheduleSmartRetry($errorCode)) {
+                $recipient->update([
+                    'error_code' => $errorCode,
+                    'error_message' => $errorMessage ? Str::limit($errorMessage, 500) : $recipient->error_message,
+                ]);
+
+                return;
+            }
+
             $recipient->update([
                 'status' => RecipientStatus::FAILED,
+                'error_code' => $errorCode ?? $recipient->error_code,
+                'error_message' => $errorMessage ? Str::limit($errorMessage, 500) : $recipient->error_message,
             ]);
             $campaign?->increment('failed_count');
         }

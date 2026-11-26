@@ -56,8 +56,12 @@ class VerifyMetaSignature
             $candidateSecrets[] = $globalSecret;
         }
 
-        // Fail closed if zero candidate secrets exist
+        // Fail closed if zero candidate secrets exist (allow in local dev if no secret configured)
         if (empty($candidateSecrets)) {
+            if (app()->environment('local')) {
+                return $next($request);
+            }
+
             abort(403, 'No Meta app secret configured for verification.');
         }
 

@@ -30,7 +30,20 @@ class MetaApiException extends RuntimeException
         $json = $response->json() ?? [];
         $error = $json['error'] ?? [];
 
-        $message = $error['message'] ?? 'Meta API request failed with status '.$response->status();
+        $rawMessage = $error['message'] ?? 'Meta API request failed with status '.$response->status();
+        $userMsg = $error['error_user_msg'] ?? null;
+        $userTitle = $error['error_user_title'] ?? null;
+        $details = $error['error_data']['details'] ?? null;
+
+        // Build a user-informative message prioritizing Meta's detailed user explanation
+        if ($userMsg) {
+            $message = $userTitle ? "{$userTitle} - {$userMsg}" : $userMsg;
+        } elseif ($details) {
+            $message = "{$rawMessage}: {$details}";
+        } else {
+            $message = $rawMessage;
+        }
+
         $code = isset($error['code']) ? (int) $error['code'] : null;
         $subcode = isset($error['error_subcode']) ? (int) $error['error_subcode'] : null;
         $traceId = isset($error['fbtrace_id']) ? (string) $error['fbtrace_id'] : null;

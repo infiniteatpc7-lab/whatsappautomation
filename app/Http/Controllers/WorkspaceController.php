@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\MessageDirection;
 use App\Enums\WhatsAppAccountStatus;
 use App\Enums\WorkspacePlan;
 use App\Enums\WorkspaceRole;
@@ -11,6 +12,7 @@ use App\Http\Requests\Workspace\CreateWorkspaceRequest;
 use App\Http\Requests\Workspace\UpdateWorkspaceRequest;
 use App\Models\KanbanBoard;
 use App\Models\KanbanColumn;
+use App\Models\Message;
 use App\Models\User;
 use App\Models\WhatsAppAccount;
 use App\Models\Workspace;
@@ -59,6 +61,14 @@ class WorkspaceController extends Controller
         $account = $workspace->whatsappAccounts()->first();
         $canManageWhatsApp = $user->can('manageWhatsAppAccounts', $workspace);
 
+        $sentTodayContacts = $account ? (int) Message::query()
+            ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+            ->where('messages.whatsapp_account_id', $account->id)
+            ->where('messages.direction', MessageDirection::OUTBOUND)
+            ->where('messages.created_at', '>=', now()->subHours(24))
+            ->distinct('conversations.contact_id')
+            ->count('conversations.contact_id') : 0;
+
         $whatsappAccount = $account ? [
             'id' => $account->id,
             'waba_id' => $account->waba_id,
@@ -69,6 +79,7 @@ class WorkspaceController extends Controller
             'verified_name' => $account->verified_name,
             'quality_rating' => $account->quality_rating,
             'tier' => $account->messaging_limit_tier,
+            'sent_today_contacts' => $sentTodayContacts,
             'webhook_verify_token' => $canManageWhatsApp ? $account->webhook_verify_token : null,
             'webhook_url' => rtrim((string) config('app.url', url('/')), '/').'/api/webhooks/whatsapp',
             'last_synced_at' => $account->last_synced_at?->diffForHumans() ?? $account->last_synced_at?->toISOString(),

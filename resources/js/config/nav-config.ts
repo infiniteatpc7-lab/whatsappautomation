@@ -17,10 +17,17 @@ export const navGroups: NavGroup[] = [
       },
       {
         title: 'Templates',
-        url: '#',
+        url: '/dashboard/templates',
         icon: 'product',
-        badge: 'PRO',
         shortcut: ['t', 't'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Broadcasts',
+        url: '/dashboard/broadcasts',
+        icon: 'send',
+        shortcut: ['b', 'b'],
         isActive: false,
         items: []
       },
@@ -34,7 +41,15 @@ export const navGroups: NavGroup[] = [
         items: []
       },
       {
-        title: 'Contact',
+        title: 'Contacts',
+        url: '/dashboard/contacts',
+        icon: 'teams',
+        shortcut: ['c', 'o'],
+        isActive: false,
+        items: []
+      },
+      {
+        title: 'Live Chat',
         url: '/dashboard/chat',
         icon: 'chat',
         shortcut: ['c', 'c'],

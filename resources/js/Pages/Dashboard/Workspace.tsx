@@ -91,6 +91,7 @@ interface WhatsAppAccountData {
   verified_name?: string | null;
   quality_rating?: string | null;
   tier?: string | null;
+  sent_today_contacts?: number;
   webhook_verify_token?: string | null;
   has_webhook_verify_token?: boolean;
   webhook_url: string;
@@ -372,7 +373,15 @@ export default function Workspace({
       preserveScroll: true,
       onSuccess: () => {
         setIsDisconnecting(false);
-        toast.success('WhatsApp account disconnected.');
+        setWabaId('');
+        setPhoneNumberId('');
+        setDisplayPhoneNumber('');
+        setAccessToken('');
+        setAppSecret('');
+        setWebhookVerifyToken(
+          Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('')
+        );
+        toast.success('WhatsApp account disconnected and removed.');
       },
       onError: (errs) => {
         setIsDisconnecting(false);
@@ -538,33 +547,33 @@ export default function Workspace({
                     <Card className='border-border/80'>
                       <CardContent className='p-6 space-y-6'>
                         {/* Status Bar */}
-                        <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/80'>
-                          <div className='flex items-center gap-3'>
+                        <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-border/80'>
+                          <div className='flex items-center gap-3 min-w-0'>
                             <div className='flex items-center justify-center text-emerald-500 shrink-0'>
                               <IconBrandWhatsapp className='size-6' />
                             </div>
-                            <div>
-                              <div className='flex items-center gap-2'>
-                                <span className='font-semibold text-sm text-foreground'>
+                            <div className='min-w-0'>
+                              <div className='flex items-center gap-2 flex-wrap'>
+                                <span className='font-semibold text-sm text-foreground whitespace-nowrap'>
                                   {initialWhatsAppAccount.display_phone_number}
                                 </span>
                                 {initialWhatsAppAccount.verified_name && (
                                   <Badge
                                     variant='outline'
-                                    className='inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                                    className='inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 whitespace-nowrap'
                                   >
-                                    <IconShieldCheck className='size-3.5 text-emerald-500' />
+                                    <IconShieldCheck className='size-3.5 text-emerald-500 shrink-0' />
                                     <span>{initialWhatsAppAccount.verified_name}</span>
                                   </Badge>
                                 )}
                               </div>
-                              <p className='text-xs text-muted-foreground mt-0.5'>
+                              <p className='text-xs text-muted-foreground mt-0.5 truncate'>
                                 Phone Number ID: <span className='font-mono text-foreground/80'>{initialWhatsAppAccount.phone_number_id}</span>
                               </p>
                             </div>
                           </div>
 
-                          <div className='flex items-center gap-2 flex-wrap'>
+                          <div className='flex items-center gap-2 flex-wrap lg:justify-end shrink-0'>
                             {initialWhatsAppAccount.status === 'connected' && (
                               <Badge
                                 variant='secondary'
@@ -601,12 +610,36 @@ export default function Workspace({
                                 Quality: <span className='text-foreground ml-1'>{initialWhatsAppAccount.quality_rating.toLowerCase()}</span>
                               </Badge>
                             )}
-                            {initialWhatsAppAccount.tier && (
+                            {initialWhatsAppAccount.tier ? (
                               <Badge
                                 variant='secondary'
-                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground'
+                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground whitespace-nowrap'
                               >
-                                <span className='text-foreground'>{initialWhatsAppAccount.tier.replace('TIER_', 'Tier ')}</span>
+                                Limit:{' '}
+                                <span className='text-foreground ml-1'>
+                                  {initialWhatsAppAccount.sent_today_contacts ?? 0} /{' '}
+                                  {({
+                                    TIER_50: '50',
+                                    TIER_250: '250',
+                                    TIER_1K: '1,000',
+                                    TIER_2K: '2,000',
+                                    TIER_10K: '10,000',
+                                    TIER_100K: '100,000',
+                                    TIER_UNLIMITED: 'Unlimited',
+                                    UNLIMITED: 'Unlimited',
+                                  } as Record<string, string>)[initialWhatsAppAccount.tier] ??
+                                    initialWhatsAppAccount.tier.replace(/^TIER_/, '')}
+                                </span>
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant='secondary'
+                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground whitespace-nowrap'
+                              >
+                                24h Sent:{' '}
+                                <span className='text-foreground ml-1'>
+                                  {initialWhatsAppAccount.sent_today_contacts ?? 0}
+                                </span>
                               </Badge>
                             )}
                           </div>

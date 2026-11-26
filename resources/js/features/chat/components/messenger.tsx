@@ -1,57 +1,54 @@
 'use client';
 
-import { SubmitEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { SubmitEvent, useCallback, useEffect, useState } from 'react';
 import { useChatStore } from '../utils/store';
-import type { Attachment, Message } from '../utils/types';
+import type { Attachment } from '../utils/types';
 import { ConversationList } from './conversation-list';
-import { ConversationSelect } from './conversation-select';
 import { ChatArea } from './chat-area';
+import { NewChatDialog } from './new-chat-dialog';
+import { IconBrandWhatsapp } from '@tabler/icons-react';
+import { cn } from '@/lib/utils';
 
-export function Messenger() {
+interface MessengerProps {
+  activePhoneNumber?: string | null;
+}
+
+export function Messenger({ activePhoneNumber }: MessengerProps) {
   const {
     conversations,
     selectedConversationId,
     draft,
-    replyCursor,
     selectConversation,
     setDraft,
     sendMessage,
-    addIncomingMessage,
-    advanceReplyCursor,
-    getActiveConversation
+    getActiveConversation,
   } = useChatStore();
 
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  // Clear attachments when switching conversations (adjusting state during render, per React docs)
   const [attachmentsConversationId, setAttachmentsConversationId] =
     useState(selectedConversationId);
+
   if (attachmentsConversationId !== selectedConversationId) {
     setAttachmentsConversationId(selectedConversationId);
     setAttachments([]);
   }
-  const shouldReduceMotion = useReducedMotion();
-  const replyTimeoutRef = useRef<number | null>(null);
-  const selectedRef = useRef(selectedConversationId);
 
-  useEffect(() => {
-    selectedRef.current = selectedConversationId;
-  }, [selectedConversationId]);
+  const handleSelect = (id: string) => {
+    selectConversation(id);
+    setMobileView('chat');
+  };
 
-  useEffect(() => {
-    return () => {
-      if (replyTimeoutRef.current) {
-        window.clearTimeout(replyTimeoutRef.current);
-      }
-    };
-  }, []);
+  const handleBack = () => {
+    setMobileView('list');
+  };
 
   const handleAddAttachments = useCallback((files: FileList) => {
     const newAttachments: Attachment[] = Array.from(files).map((file) => ({
       id: 'file-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       name: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
     }));
     setAttachments((prev) => [...prev, ...newAttachments]);
   }, []);
@@ -63,63 +60,46 @@ export function Messenger() {
   const handleSubmit = useCallback(
     (e: SubmitEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const active = getActiveConversation();
+      const active = getActiveConversation() || conversations[0];
       if ((!draft.trim() && attachments.length === 0) || !active) return;
 
-      const conversationId = active.id;
       sendMessage(draft, attachments.length > 0 ? attachments : undefined);
       setAttachments([]);
-
-      const autoReplies = active.autoReplies;
-      if (!autoReplies.length) return;
-
-      const cursor = replyCursor[conversationId] ?? 0;
-      const nextReply = autoReplies[cursor % autoReplies.length];
-      const delay = shouldReduceMotion ? 0 : 900;
-
-      replyTimeoutRef.current = window.setTimeout(() => {
-        const timestamp = new Date().toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-        const incoming: Message = {
-          id: 'incoming-' + Date.now().toString(),
-          sender: 'contact',
-          author: active.name,
-          text: nextReply,
-          timestamp
-        };
-
-        addIncomingMessage(conversationId, incoming);
-        advanceReplyCursor(conversationId);
-      }, delay);
     },
-    [
-      draft,
-      attachments,
-      replyCursor,
-      shouldReduceMotion,
-      getActiveConversation,
-      sendMessage,
-      addIncomingMessage,
-      advanceReplyCursor
-    ]
+    [draft, attachments, conversations, getActiveConversation, sendMessage]
   );
 
-  const activeConversation = getActiveConversation();
-  if (!activeConversation) return null;
+  // If there are zero conversations in the workspace yet:
+  if (conversations.length === 0) {
+    return (
+      <div className='border-border/50 bg-background/70 flex flex-col items-center justify-center min-h-[480px] w-full p-8 text-center rounded-2xl border backdrop-blur-xl'>
+        <div className='flex size-14 items-center justify-center rounded-2xl bg-[#25D366]/15 text-[#25D366] mb-4 shadow-sm'>
+          <IconBrandWhatsapp className='size-8' />
+        </div>
+        <h3 className='text-lg font-semibold text-foreground'>WhatsApp Inbox Ready</h3>
+        <p className='text-sm text-muted-foreground max-w-md mt-1 mb-6'>
+          {activePhoneNumber ? (
+            <>
+              Your WhatsApp Business number <span className='font-mono font-medium text-foreground'>{activePhoneNumber}</span> is active. Incoming customer messages will appear here live.
+            </>
+          ) : (
+            <>Your WhatsApp Business API is connected. Incoming customer messages will appear here live in real-time.</>
+          )}
+        </p>
+        <NewChatDialog />
+      </div>
+    );
+  }
+
+  const activeConversation = getActiveConversation() || conversations[0];
 
   return (
-    <div className='border-border/50 bg-background/70 relative grid min-h-0 w-full grid-rows-[auto,1fr] gap-3 overflow-hidden rounded-2xl border p-3 backdrop-blur-xl sm:gap-4 sm:p-4 lg:[grid-template-columns:30%_1fr] lg:grid-rows-[1fr] lg:gap-4 lg:rounded-3xl lg:p-5'>
-      <ConversationSelect
-        conversations={conversations}
-        selectedId={selectedConversationId}
-        onSelect={selectConversation}
-      />
+    <div className='border-border/50 bg-background/70 sm:bg-transparent relative flex flex-col h-full min-h-0 w-full overflow-hidden rounded-none border-0 p-0 backdrop-blur-xl sm:backdrop-blur-none lg:grid lg:[grid-template-columns:340px_1fr] lg:gap-3'>
       <ConversationList
         conversations={conversations}
-        selectedId={selectedConversationId}
-        onSelect={selectConversation}
+        selectedId={selectedConversationId || activeConversation.id}
+        onSelect={handleSelect}
+        className={cn('h-full w-full', mobileView === 'chat' ? 'hidden lg:flex' : 'flex')}
       />
       <ChatArea
         conversation={activeConversation}
@@ -129,6 +109,8 @@ export function Messenger() {
         attachments={attachments}
         onAddAttachments={handleAddAttachments}
         onRemoveAttachment={handleRemoveAttachment}
+        onBack={handleBack}
+        className={cn('h-full w-full', mobileView === 'list' ? 'hidden lg:flex' : 'flex')}
       />
     </div>
   );

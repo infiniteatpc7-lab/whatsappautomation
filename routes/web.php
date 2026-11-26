@@ -9,6 +9,10 @@ use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SessionSecurityController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\CampaignController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsAppAccountController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\WorkspaceInvitationController;
@@ -74,6 +78,32 @@ Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group
         return Inertia::render('Dashboard/Overview');
     })->name('dashboard.overview');
 
+    // Broadcasts / Campaigns routes
+    Route::get('/broadcasts', [CampaignController::class, 'index'])->name('dashboard.broadcasts.index');
+    Route::get('/broadcasts/new', [CampaignController::class, 'create'])->name('dashboard.broadcasts.create');
+    Route::post('/broadcasts', [CampaignController::class, 'store'])->name('dashboard.broadcasts.store');
+    Route::get('/broadcasts/{campaign}', [CampaignController::class, 'show'])->name('dashboard.broadcasts.show');
+    Route::post('/broadcasts/{campaign}/pause', [CampaignController::class, 'pause'])->name('dashboard.broadcasts.pause');
+    Route::post('/broadcasts/{campaign}/resume', [CampaignController::class, 'resume'])->name('dashboard.broadcasts.resume');
+    Route::post('/broadcasts/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('dashboard.broadcasts.cancel');
+    Route::post('/broadcasts/{campaign}/retry-failed', [CampaignController::class, 'retryFailed'])->name('dashboard.broadcasts.retry-failed');
+
+    // Contacts & Tags routes
+    Route::get('/contacts', [ContactController::class, 'index'])->name('dashboard.contacts.index');
+    Route::post('/contacts', [ContactController::class, 'store'])->name('dashboard.contacts.store');
+    Route::patch('/contacts/{contact}', [ContactController::class, 'update'])->name('dashboard.contacts.update');
+    Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('dashboard.contacts.destroy');
+    Route::post('/contacts/import', [ContactController::class, 'import'])->name('dashboard.contacts.import');
+    Route::post('/tags', [ContactController::class, 'storeTag'])->name('dashboard.tags.store');
+
+    // Templates routes
+    Route::get('/templates', [TemplateController::class, 'index'])->name('dashboard.templates.index');
+    Route::get('/templates/new', [TemplateController::class, 'create'])->name('dashboard.templates.create');
+    Route::post('/templates', [TemplateController::class, 'store'])->name('dashboard.templates.store');
+    Route::get('/templates/{template}/edit', [TemplateController::class, 'edit'])->name('dashboard.templates.edit');
+    Route::patch('/templates/{template}', [TemplateController::class, 'update'])->name('dashboard.templates.update');
+    Route::post('/templates/sync', [TemplateController::class, 'sync'])->name('dashboard.templates.sync');
+
     // Product routes
     Route::get('/product', function () {
         return Inertia::render('Dashboard/Product/Index');
@@ -98,9 +128,12 @@ Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group
     })->name('dashboard.kanban');
 
     // Chat
-    Route::get('/chat', function () {
-        return Inertia::render('Dashboard/Chat/Index');
-    })->name('dashboard.chat');
+    Route::get('/chat', [ChatController::class, 'index'])->name('dashboard.chat');
+    Route::get('/chat/conversations', [ChatController::class, 'conversations'])->name('dashboard.chat.conversations');
+    Route::get('/chat/conversations/{conversation}/messages', [ChatController::class, 'messages'])->name('dashboard.chat.messages');
+    Route::post('/chat/conversations/{conversation}/messages', [ChatController::class, 'storeMessage'])->name('dashboard.chat.messages.store');
+    Route::post('/chat/conversations/{conversation}/read', [ChatController::class, 'markAsRead'])->name('dashboard.chat.read');
+    Route::post('/chat/conversations/start', [ChatController::class, 'startConversation'])->name('dashboard.chat.start');
 
     // AI Chat
     Route::get('/ai-chat', function () {

@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useLayoutEffect } from 'react';
+import React, { useRef, useLayoutEffect, useEffect } from 'react';
 import { LayoutGroup, motion } from 'motion/react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
@@ -43,11 +43,19 @@ export default function AppSidebar() {
   const pathname = (page?.url || '').split('?')[0];
   const filteredGroups = useFilteredNavGroups(navGroups);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { isMobile, openMobile, setOpenMobile } = useSidebar();
 
   const auth = page?.props?.auth;
   const user = auth?.user;
   const currentWorkspace = auth?.workspace;
   const workspaces = auth?.workspaces || [];
+
+  // Automatically close mobile sidebar when navigating to a new route
+  useEffect(() => {
+    if (isMobile && openMobile) {
+      setOpenMobile(false);
+    }
+  }, [pathname, isMobile]);
 
   // Restore scroll position on mount and whenever pathname changes
   useLayoutEffect(() => {
@@ -154,7 +162,10 @@ export default function AppSidebar() {
                   ))}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => router.visit('/dashboard/workspace')}
+                    onClick={() => {
+                      if (isMobile) setOpenMobile(false);
+                      router.visit('/dashboard/workspace');
+                    }}
                     className='cursor-pointer text-xs'
                   >
                     <Icons.settings className='mr-2 size-3.5' />
@@ -241,15 +252,15 @@ export default function AppSidebar() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={() => router.visit('/dashboard/account')}>
+                  <DropdownMenuItem onClick={() => { if (isMobile) setOpenMobile(false); router.visit('/dashboard/account'); }}>
                     <Icons.user className='mr-2 size-4' />
                     Account
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.visit('/dashboard/workspace')}>
+                  <DropdownMenuItem onClick={() => { if (isMobile) setOpenMobile(false); router.visit('/dashboard/workspace'); }}>
                     <Icons.building className='mr-2 size-4' />
                     Workspace
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.visit('/dashboard/notifications')}>
+                  <DropdownMenuItem onClick={() => { if (isMobile) setOpenMobile(false); router.visit('/dashboard/notifications'); }}>
                     <Icons.notification className='mr-2 size-4' />
                     Notifications
                   </DropdownMenuItem>
@@ -277,7 +288,7 @@ function isActivePath(pathname: string, url: string) {
 }
 
 function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
-  const { state, isMobile } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
   const children = item.items ?? [];
   const active = isActivePath(pathname, item.url);
@@ -300,7 +311,14 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                 aria-label={item.title}
               />
             ) : (
-              <Link href={item.url} preserveScroll aria-label={item.title} />
+              <Link
+                href={item.url}
+                preserveScroll
+                aria-label={item.title}
+                onClick={() => {
+                  if (isMobile) setOpenMobile(false);
+                }}
+              />
             )
           }
           tooltip={item.title}
@@ -495,7 +513,14 @@ function NavMainItem({ item, pathname }: { item: NavItem; pathname: string }) {
                         aria-label={child.title}
                       />
                     ) : (
-                      <Link href={child.url} preserveScroll aria-label={child.title} />
+                      <Link
+                        href={child.url}
+                        preserveScroll
+                        aria-label={child.title}
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false);
+                        }}
+                      />
                     )
                   }
                   isActive={childActive}

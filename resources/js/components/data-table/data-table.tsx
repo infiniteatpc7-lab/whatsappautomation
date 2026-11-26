@@ -58,7 +58,7 @@ export function DataTable<TData extends RowData>({
     >
       {children}
       {/* Local layout patch: table fills the remaining page height and scrolls on both axes */}
-      <div className='relative flex flex-1'>
+      <div className='relative flex flex-1 min-h-[320px]'>
         <div className='absolute inset-0 isolate flex overflow-hidden rounded-lg border'>
           {/* ui/table's overflow-x wrapper would trap the sticky header; let ScrollArea own both axes */}
           <ScrollArea className='h-full w-full [&_[data-slot=table-container]]:overflow-visible'>

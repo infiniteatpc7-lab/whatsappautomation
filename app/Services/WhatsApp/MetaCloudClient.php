@@ -68,7 +68,7 @@ class MetaCloudClient
     public function verifyPhoneNumber(string $phoneNumberId, string $accessToken): array
     {
         $response = $this->request($accessToken)->get("/{$phoneNumberId}", [
-            'fields' => 'id,display_phone_number,verified_name,quality_rating,messaging_limit_tier',
+            'fields' => 'id,display_phone_number,verified_name,quality_rating,whatsapp_business_manager_messaging_limit,messaging_limit_tier',
         ]);
 
         return $this->handleResponse($response);
@@ -195,6 +195,39 @@ class MetaCloudClient
             ->get("/{$account->waba_id}/message_templates", [
                 'limit' => $limit,
             ]);
+
+        return $this->handleResponse($response);
+    }
+
+    /**
+     * Create a new message template under the WABA.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     *
+     * @throws MetaApiException
+     */
+    public function createTemplate(WhatsAppAccount $account, array $payload): array
+    {
+        $response = $this->request($account->access_token)
+            ->post("/{$account->waba_id}/message_templates", $payload);
+
+        return $this->handleResponse($response);
+    }
+
+    /**
+     * Edit an existing message template by its Meta template ID.
+     * Meta replaces all components with the provided payload and re-evaluates the template.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     *
+     * @throws MetaApiException
+     */
+    public function updateTemplate(WhatsAppAccount $account, string $metaTemplateId, array $payload): array
+    {
+        $response = $this->request($account->access_token)
+            ->post("/{$metaTemplateId}", $payload);
 
         return $this->handleResponse($response);
     }

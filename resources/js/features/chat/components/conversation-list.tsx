@@ -3,24 +3,21 @@
 import { useMemo, useState } from 'react';
 import { Icons } from '@/components/icons';
 import { motion } from 'motion/react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { Conversation } from '../utils/types';
-
-const statusDotColor = {
-  online: 'bg-green-500',
-  offline: 'bg-red-500'
-} as const;
+import { formatWhatsAppTimestamp, getWhatsAppAvatarColor } from '../utils/types';
+import { NewChatDialog } from './new-chat-dialog';
 
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string;
   onSelect: (id: string) => void;
+  className?: string;
 }
 
-export function ConversationList({ conversations, selectedId, onSelect }: ConversationListProps) {
+export function ConversationList({ conversations, selectedId, onSelect, className }: ConversationListProps) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -32,21 +29,15 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
   }, [conversations, search]);
 
   return (
-    <div className='border-border/40 bg-background/75 hidden h-full flex-col gap-4 overflow-hidden rounded-2xl border p-3 backdrop-blur lg:col-start-1 lg:col-end-2 lg:flex lg:rounded-3xl lg:p-4'>
+    <div className={cn('border-border/40 bg-background/75 h-full min-h-0 flex-col gap-4 overflow-hidden rounded-2xl border p-3 backdrop-blur lg:col-start-1 lg:col-end-2 lg:flex lg:rounded-3xl lg:p-4', className)}>
       <div className='flex items-center justify-between gap-3'>
         <div>
-          <p className='text-foreground text-sm font-semibold'>Messenger</p>
+          <p className='text-foreground text-sm font-semibold'>WhatsApp Inbox</p>
           <p className='text-muted-foreground text-xs'>
-            {conversations.length} active conversation
-            {conversations.length === 1 ? '' : 's'}
+            {conversations.length} conversation{conversations.length === 1 ? '' : 's'}
           </p>
         </div>
-        <Badge
-          variant='outline'
-          className='bg-primary/15 text-primary hover:bg-primary/15 hover:text-primary border-border/50 rounded-full border px-3 py-1 text-[0.7rem] tracking-[0.24em] uppercase'
-        >
-          Live
-        </Badge>
+        <NewChatDialog />
       </div>
 
       <label htmlFor='messenger-search' className='sr-only'>
@@ -68,7 +59,7 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
       </div>
 
       <div
-        className='flex-1 space-y-2 overflow-y-auto pr-1'
+        className='flex-1 space-y-1 overflow-y-auto pr-1'
         aria-label='Conversation list'
         role='list'
       >
@@ -77,7 +68,33 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
         ) : null}
         {filtered.map((conversation) => {
           const isActive = conversation.id === selectedId;
-          const lastMessage = conversation.messages[conversation.messages.length - 1];
+          const lastMessage =
+            (conversation.messages && conversation.messages.length > 0
+              ? conversation.messages[conversation.messages.length - 1]
+              : conversation.last_message) || null;
+
+          const displayTime = formatWhatsAppTimestamp(
+            lastMessage?.created_at || conversation.last_message_at
+          );
+
+          const isPhoto =
+            lastMessage?.type === 'image' ||
+            lastMessage?.text === '[Image]' ||
+            lastMessage?.text?.toLowerCase() === 'photo';
+
+          const isVideo =
+            lastMessage?.type === 'video' ||
+            lastMessage?.text === '[Video]' ||
+            lastMessage?.text?.toLowerCase() === 'video';
+
+          const isDoc =
+            lastMessage?.type === 'document' ||
+            lastMessage?.text?.toLowerCase().startsWith('[document]');
+
+          const isAudio =
+            lastMessage?.type === 'audio' ||
+            lastMessage?.text === '[Audio]';
+
           return (
             <motion.button
               key={conversation.id}
@@ -85,52 +102,123 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
               onClick={() => onSelect(conversation.id)}
               aria-current={isActive ? 'true' : undefined}
               className={cn(
-                'focus-visible:ring-primary/50 group focus-visible:ring-offset-background relative flex w-full items-start gap-3 rounded-2xl border border-transparent p-3 text-left transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-                isActive
-                  ? 'border-primary/40 bg-primary/10'
-                  : 'bg-background/70 hover:border-border/40 hover:bg-muted/40'
+                'group relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 h-[72px] text-left select-none cursor-pointer',
+                'touch-manipulation [-webkit-tap-highlight-color:transparent]',
+                'transition-[background-color,transform] duration-100 ease-out',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50',
+                'bg-transparent hover:bg-muted/60 dark:hover:bg-[#242626]/70 active:bg-muted/80 dark:active:bg-[#242626] active:scale-[0.985] md:active:scale-100 text-foreground'
               )}
               role='listitem'
             >
+              {/* Circular Avatar */}
               <div className='relative shrink-0'>
-                <Avatar className='border-border/40 bg-background/80 text-foreground h-10 w-10 rounded-2xl border'>
-                  <AvatarFallback className='bg-primary/15 text-primary rounded-2xl text-sm font-medium'>
-                    {conversation.initials}
+                <Avatar className='h-12 w-12 rounded-full overflow-hidden'>
+                  {conversation.avatar && (
+                    <AvatarImage
+                      src={conversation.avatar}
+                      alt={conversation.name}
+                      className='h-full w-full object-cover rounded-full'
+                    />
+                  )}
+                  <AvatarFallback
+                    className={cn(
+                      'rounded-full text-base font-semibold select-none flex items-center justify-center',
+                      getWhatsAppAvatarColor(conversation.name)
+                    )}
+                  >
+                    {(conversation.name.trim()[0] || 'W').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span
-                  className={cn(
-                    'border-background absolute right-0 bottom-0 inline-flex h-3 w-3 rounded-full border-2',
-                    statusDotColor[conversation.status]
-                  )}
-                  aria-label={conversation.status === 'online' ? 'Online' : 'Offline'}
-                />
+                {conversation.status === 'online' && (
+                  <span
+                    className='border-background absolute right-0 bottom-0 inline-flex h-3.5 w-3.5 rounded-full border-2 bg-emerald-500'
+                    aria-label='Online'
+                  />
+                )}
               </div>
+
+              {/* Text Info */}
               <div className='min-w-0 flex-1 space-y-1'>
-                <div className='flex items-start justify-between gap-2'>
-                  <div className='min-w-0 flex-1'>
-                    <p className='text-foreground text-sm font-semibold'>{conversation.name}</p>
-                    <p className='text-muted-foreground text-xs'>{conversation.title}</p>
-                  </div>
-                  {lastMessage && (
-                    <span className='text-muted-foreground shrink-0 text-[0.65rem]'>
-                      {lastMessage.timestamp}
+                {/* Top Row: Name and Dynamic Time */}
+                <div className='flex items-center justify-between gap-1.5'>
+                  <p className='text-foreground text-sm font-medium truncate'>
+                    {conversation.name}
+                  </p>
+                  {displayTime && (
+                    <span
+                      className={cn(
+                        'shrink-0 text-xs transition-colors',
+                        conversation.unread > 0 ? 'text-emerald-500 font-medium' : 'text-muted-foreground/80'
+                      )}
+                    >
+                      {displayTime}
                     </span>
                   )}
                 </div>
-                {lastMessage ? (
-                  <p className='text-muted-foreground line-clamp-2 text-xs'>
-                    {lastMessage.author}: {lastMessage.text}
-                  </p>
-                ) : (
-                  <p className='text-muted-foreground text-xs'>No messages yet</p>
-                )}
+
+                {/* Bottom Row: Checkmarks + Media/Snippet + Unread Badge / Dropdown Chevron */}
+                <div className='flex items-center justify-between gap-1.5'>
+                  <div className='flex items-center gap-1.5 text-muted-foreground/80 text-xs truncate min-w-0'>
+                    {lastMessage ? (
+                      <>
+                        {lastMessage.sender === 'user' && (
+                          <span className='inline-flex shrink-0'>
+                            {lastMessage.status === 'read' ? (
+                              <Icons.checks className='h-4 w-4 text-[#53bdeb]' />
+                            ) : lastMessage.status === 'delivered' ? (
+                              <Icons.checks className='h-4 w-4 text-muted-foreground/80' />
+                            ) : lastMessage.status === 'failed' ? (
+                              <Icons.alertCircle
+                                className='h-3.5 w-3.5 text-destructive'
+                                title={lastMessage.error_message ? `Failed: ${lastMessage.error_message}` : 'Message delivery failed'}
+                              />
+                            ) : (
+                              <Icons.check className='h-4 w-4 text-muted-foreground/80' />
+                            )}
+                          </span>
+                        )}
+
+                        {isPhoto ? (
+                          <span className='inline-flex items-center gap-1 truncate'>
+                            <Icons.media className='h-3.5 w-3.5 shrink-0' />
+                            <span className='truncate'>Photo</span>
+                          </span>
+                        ) : isVideo ? (
+                          <span className='inline-flex items-center gap-1 truncate'>
+                            <Icons.video className='h-3.5 w-3.5 shrink-0' />
+                            <span className='truncate'>Video</span>
+                          </span>
+                        ) : isDoc ? (
+                          <span className='inline-flex items-center gap-1 truncate'>
+                            <Icons.post className='h-3.5 w-3.5 shrink-0' />
+                            <span className='truncate'>{lastMessage.text.replace(/^\[Document\]\s*/i, '')}</span>
+                          </span>
+                        ) : isAudio ? (
+                          <span className='inline-flex items-center gap-1 truncate'>
+                            <Icons.music className='h-3.5 w-3.5 shrink-0' />
+                            <span className='truncate'>Voice message</span>
+                          </span>
+                        ) : (
+                          <span className='truncate'>{lastMessage.text}</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className='font-mono text-[11px] opacity-75 truncate'>{conversation.phone}</span>
+                    )}
+                  </div>
+
+                  <div className='flex items-center gap-1.5 shrink-0'>
+                    {conversation.unread > 0 && (
+                      <span className='inline-flex h-5 min-w-5 px-1.5 items-center justify-center rounded-full bg-[#25d366] text-white text-[11px] font-bold shadow-xs'>
+                        {conversation.unread}
+                      </span>
+                    )}
+                    <Icons.chevronDown
+                      className='h-4 w-4 text-muted-foreground/60 transition-opacity duration-150 shrink-0 opacity-0 group-hover:opacity-100'
+                    />
+                  </div>
+                </div>
               </div>
-              {conversation.unread > 0 && (
-                <span className='bg-primary text-primary-foreground ml-2 inline-flex min-h-[1.5rem] min-w-[1.5rem] items-center justify-center rounded-full text-[0.7rem] font-semibold shadow-lg'>
-                  {conversation.unread}
-                </span>
-              )}
             </motion.button>
           );
         })}

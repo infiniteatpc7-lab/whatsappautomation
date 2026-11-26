@@ -180,6 +180,27 @@ class WhatsAppConnectionAndWebhookTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_disconnect_permanently_removes_whatsapp_account_from_database(): void
+    {
+        [$workspace, $owner] = $this->createWorkspaceWithUser('Disconnect Org', 'disconnect_owner@org.com');
+        $account = $this->createAccount($workspace, [
+            'phone_number_id' => 'phone_disconnect_123',
+        ]);
+        $accountId = $account->id;
+
+        $response = $this->actingAs($owner)
+            ->deleteJson("/dashboard/whatsapp-accounts/{$accountId}");
+
+        $response->assertOk();
+        $response->assertJson([
+            'message' => 'WhatsApp account disconnected and removed successfully.',
+        ]);
+
+        $this->assertDatabaseMissing('whatsapp_accounts', [
+            'id' => $accountId,
+        ]);
+    }
+
     public function test_account_test_endpoint_syncs_meta_details_on_success(): void
     {
         [$workspace, $owner] = $this->createWorkspaceWithUser('Test Org', 'owner_test@example.com');
