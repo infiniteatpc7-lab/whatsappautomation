@@ -1,0 +1,58 @@
+name: Deploy to Hostinger (wa.jeniferdecor.in)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, bcmath, curl, zip
+
+      - name: Install Composer dependencies (production)
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Build Vite frontend assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync files to Hostinger via SSH
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          REMOTE_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          REMOTE_USER: ${{ secrets.HOSTINGER_SSH_USER }}
+          TARGET: /home/u943120118/domains/jeniferdecor.in/public_html/wa
+          ARGS: '-rlgoDzvc -i --delete'
+          EXCLUDE: '/.git/, /.github/, /node_modules/, /.env, /storage/app/*, /storage/framework/cache/*, /storage/framework/sessions/*, /storage/framework/views/*, /storage/logs/*'
+
+      - name: Run Laravel migrations and cache on Hostinger
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOSTINGER_SSH_HOST }}
+          port: ${{ secrets.HOSTINGER_SSH_PORT }}
+          username: ${{ secrets.HOSTINGER_SSH_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd /home/u943120118/domains/jeniferdecor.in/public_html/wa
+            chmod +x deploy-hostinger.sh
+            ./deploy-hostinger.sh
