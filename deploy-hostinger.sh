@@ -38,17 +38,19 @@ if [ ! -L public/storage ]; then
 fi
 
 echo "Running database migrations..."
-$PHP_BIN artisan migrate --force
+$PHP_BIN artisan migrate --force --no-interaction
 
 echo "Optimizing Laravel caches..."
 $PHP_BIN artisan config:clear
 $PHP_BIN artisan route:clear
 $PHP_BIN artisan view:clear
+$PHP_BIN artisan event:clear
 $PHP_BIN artisan config:cache
 $PHP_BIN artisan route:cache
 $PHP_BIN artisan view:cache
+$PHP_BIN artisan event:cache
 
 echo "Restarting queue workers..."
 $PHP_BIN artisan queue:restart || true
 
-echo "Deployment complete for https://wa.jeniferdecor.in"
+echo "Deployment complete! https://wa.jeniferdecor.in is live."

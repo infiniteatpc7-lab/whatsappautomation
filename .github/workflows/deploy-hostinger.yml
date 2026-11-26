@@ -34,7 +34,9 @@ jobs:
           npm ci
           npm run build
 
-      - name: Sync files to Hostinger via SSH
+      # vendor/ is built on GitHub Actions (PHP 8.4) and synced to Hostinger
+      # so Hostinger's CLI PHP version does NOT matter for Composer
+      - name: Sync files to Hostinger via SSH (including vendor)
         uses: easingthemes/ssh-deploy@main
         env:
           SSH_PRIVATE_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
@@ -45,7 +47,7 @@ jobs:
           ARGS: '-rlgoDzvc -i --delete'
           EXCLUDE: '/.git/, /.github/, /node_modules/, /.env, /storage/app/*, /storage/framework/cache/*, /storage/framework/sessions/*, /storage/framework/views/*, /storage/logs/*'
 
-      - name: Run Laravel migrations and cache on Hostinger
+      - name: Run Laravel post-deploy commands on Hostinger
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HOSTINGER_SSH_HOST }}
@@ -55,4 +57,4 @@ jobs:
           script: |
             cd /home/u943120118/domains/jeniferdecor.in/public_html/wa
             chmod +x deploy-hostinger.sh
-            ./deploy-hostinger.sh
+            bash deploy-hostinger.sh
