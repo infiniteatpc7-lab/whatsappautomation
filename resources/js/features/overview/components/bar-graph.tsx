@@ -23,31 +23,45 @@ const chartData = [
 
 const chartConfig = {
   desktop: {
-    label: 'Desktop',
+    label: 'Delivered',
     color: 'var(--chart-1)'
   },
   mobile: {
-    label: 'Mobile',
+    label: 'Seen',
     color: 'var(--chart-2)'
   }
 } satisfies ChartConfig;
 
-export function BarGraph() {
+interface BarGraphProps {
+  data?: Array<{ month: string; desktop: number; mobile: number }>;
+  title?: string;
+  description?: string;
+  badgeText?: string;
+}
+
+export function BarGraph({
+  data = chartData,
+  title = 'Broadcast Performance',
+  description = 'Delivered vs Seen across recent campaigns',
+  badgeText,
+}: BarGraphProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          Bar Chart - Multiple
-          <Badge variant='outline'>
-            <Icons.trendingDown />
-            -5.2%
-          </Badge>
+          {title}
+          {badgeText && (
+            <Badge variant='outline'>
+              <Icons.trendingUp />
+              {badgeText}
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>January - June 2025</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <BarChart accessibilityLayer data={chartData}>
+          <BarChart accessibilityLayer data={data}>
             <rect
               x='0'
               y='0'
@@ -63,7 +77,7 @@ export function BarGraph() {
               tickLine={false}
               tickMargin={10}
               axisLine={false}
-              tickFormatter={(value) => value.slice(0, 3)}
+              tickFormatter={(value) => value.slice(0, 10)}
             />
             <ChartTooltip
               cursor={false}

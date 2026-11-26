@@ -13,6 +13,7 @@ use App\Http\Controllers\CampaignClickController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\WhatsAppAccountController;
 use App\Http\Controllers\WorkspaceController;
@@ -77,9 +78,7 @@ Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group
         return redirect()->route('dashboard.overview');
     });
 
-    Route::get('/overview', function () {
-        return Inertia::render('Dashboard/Overview');
-    })->name('dashboard.overview');
+    Route::get('/overview', OverviewController::class)->name('dashboard.overview');
 
     // Broadcasts / Campaigns routes
     Route::get('/broadcasts', [CampaignController::class, 'index'])->name('dashboard.broadcasts.index');

@@ -551,6 +551,8 @@ class CampaignController extends Controller
             'daily_limit' => $dailyLimit,
             'sent_today' => $sentToday,
             'remaining' => $remaining,
+            'quality_rating' => $account?->quality_rating,
+            'health_status' => $account?->health_status,
         ];
     }
 

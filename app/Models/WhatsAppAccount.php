@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'app_secret',
     'webhook_verify_token',
     'quality_rating',
+    'health_status',
     'messaging_limit_tier',
     'status',
     'last_synced_at',

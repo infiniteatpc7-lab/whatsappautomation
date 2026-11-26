@@ -119,6 +119,44 @@ export default function BroadcastsIndexPage() {
                   </span>
                 </span>
               )}
+              {quota.quality_rating && (
+                <span>
+                  Quality:{' '}
+                  <span
+                    className={cn(
+                      'font-semibold capitalize',
+                      quota.quality_rating === 'GREEN'
+                        ? 'text-emerald-500'
+                        : quota.quality_rating === 'YELLOW'
+                        ? 'text-amber-500'
+                        : quota.quality_rating === 'RED'
+                        ? 'text-red-500'
+                        : 'text-foreground'
+                    )}
+                  >
+                    {quota.quality_rating.toLowerCase()}
+                  </span>
+                </span>
+              )}
+              {quota.health_status && (
+                <span>
+                  Health:{' '}
+                  <span
+                    className={cn(
+                      'font-semibold capitalize',
+                      quota.health_status === 'AVAILABLE'
+                        ? 'text-emerald-500'
+                        : quota.health_status === 'LIMITED'
+                        ? 'text-amber-500'
+                        : quota.health_status === 'BLOCKED'
+                        ? 'text-red-500'
+                        : 'text-foreground'
+                    )}
+                  >
+                    {quota.health_status.toLowerCase()}
+                  </span>
+                </span>
+              )}
             </div>
             <span className='text-[11px] text-muted-foreground'>
               Opted-out contacts are automatically excluded from all broadcasts.

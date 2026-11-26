@@ -124,7 +124,7 @@ export const columns: ColumnDef<DataTableFeatures, WhatsAppTemplate>[] = [
     cell: ({ cell }) => {
       const body = cell.getValue<string>();
       return (
-        <div className='max-w-xs sm:max-w-sm truncate text-xs text-muted-foreground'>
+        <div className='max-w-[180px] sm:max-w-[220px] xl:max-w-[280px] truncate text-xs text-muted-foreground'>
           {body || '—'}
         </div>
       );
@@ -138,9 +138,12 @@ export const columns: ColumnDef<DataTableFeatures, WhatsAppTemplate>[] = [
       if (!val) return <span className='text-muted-foreground text-xs'>—</span>;
       const date = new Date(val);
       return (
-        <span className='text-xs text-muted-foreground font-mono'>
-          {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </span>
+        <div className='flex flex-col text-xs text-muted-foreground font-mono whitespace-nowrap'>
+          <span className='text-foreground/90'>{date.toLocaleDateString()}</span>
+          <span className='text-[11px]'>
+            {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
       );
     },
   },

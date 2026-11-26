@@ -22,42 +22,55 @@ const chartData = [
 
 const chartConfig = {
   visitors: {
-    label: 'Visitors'
+    label: 'Messages'
   },
-  chrome: {
-    label: 'Chrome',
+  delivered: {
+    label: 'Delivered',
     color: 'var(--chart-1)'
   },
-  safari: {
-    label: 'Safari',
+  read: {
+    label: 'Seen',
     color: 'var(--chart-2)'
   },
-  firefox: {
-    label: 'Firefox',
+  sent: {
+    label: 'Sent',
     color: 'var(--chart-3)'
   },
-  edge: {
-    label: 'Edge',
+  failed: {
+    label: 'Failed',
     color: 'var(--chart-4)'
-  },
-  other: {
-    label: 'Other',
-    color: 'var(--chart-5)'
   }
 } satisfies ChartConfig;
 
-export function PieGraph() {
+interface PieGraphProps {
+  data?: Array<{ browser: string; visitors: number; fill: string }>;
+  title?: string;
+  description?: string;
+  badgeText?: string;
+}
+
+export function PieGraph({
+  data = chartData,
+  title = 'Message Status (30d)',
+  description = 'Delivery & read breakdown',
+  badgeText,
+}: PieGraphProps) {
+  const nonZero = data.filter((d) => d.visitors > 0);
+  const displayData = nonZero.length > 0 ? nonZero : [{ browser: 'sent', visitors: 0, fill: 'var(--chart-3)' }];
+
   return (
     <Card className='flex h-full flex-col'>
       <CardHeader className='items-center pb-0'>
         <CardTitle>
-          Pie Chart
-          <Badge variant='outline'>
-            <Icons.trendingUp />
-            +5.2%
-          </Badge>
+          {title}
+          {badgeText && (
+            <Badge variant='outline'>
+              <Icons.trendingUp />
+              {badgeText}
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className='flex flex-1 items-center justify-center pb-0'>
         <ChartContainer
@@ -67,7 +80,7 @@ export function PieGraph() {
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent nameKey='visitors' hideLabel />} />
             <Pie
-              data={chartData}
+              data={displayData}
               innerRadius={30}
               dataKey='visitors'
               radius={10}

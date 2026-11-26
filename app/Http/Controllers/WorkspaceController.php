@@ -78,6 +78,7 @@ class WorkspaceController extends Controller
             'status' => $account->status instanceof WhatsAppAccountStatus ? $account->status->value : (string) $account->status,
             'verified_name' => $account->verified_name,
             'quality_rating' => $account->quality_rating,
+            'health_status' => $account->health_status,
             'tier' => $account->messaging_limit_tier,
             'sent_today_contacts' => $sentTodayContacts,
             'webhook_verify_token' => $canManageWhatsApp ? $account->webhook_verify_token : null,

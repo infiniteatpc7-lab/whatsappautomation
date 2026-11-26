@@ -21,6 +21,8 @@ export interface BroadcastQuota {
   daily_limit: number | null;
   sent_today: number;
   remaining: number | null;
+  quality_rating?: string | null;
+  health_status?: string | null;
 }
 
 export interface CampaignItem {

@@ -28,40 +28,55 @@ const chartData = [
   { month: 'December', desktop: 271, mobile: 198 }
 ];
 
-const chartConfig = {
+const defaultChartConfig = {
   desktop: {
-    label: 'Desktop',
+    label: 'Outbound',
     color: 'var(--chart-1)'
   },
   mobile: {
-    label: 'Mobile',
+    label: 'Inbound',
     color: 'var(--chart-2)'
   }
 } satisfies ChartConfig;
 
-export function AreaGraph() {
+interface AreaGraphProps {
+  data?: Array<{ month: string; desktop: number; mobile: number }>;
+  title?: string;
+  description?: string;
+  badgeText?: string;
+}
+
+export function AreaGraph({
+  data = chartData,
+  title = 'Message Volume',
+  description = 'Outbound vs inbound messages (last 7 days)',
+  badgeText,
+}: AreaGraphProps) {
+  const chartConfig = defaultChartConfig;
   return (
     <Card>
       <CardHeader>
         <CardTitle>
-          Dotted Area Chart
-          <Badge variant='outline'>
-            <Icons.trendingUp />
-            -5.2%
-          </Badge>
+          {title}
+          {badgeText && (
+            <Badge variant='outline'>
+              <Icons.trendingUp />
+              {badgeText}
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>Showing total visitors for the last 6 months</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-          <AreaChart accessibilityLayer data={chartData}>
+          <AreaChart accessibilityLayer data={data}>
             <CartesianGrid vertical={false} strokeDasharray='3 3' />
             <XAxis
               dataKey='month'
               tickLine={false}
               axisLine={false}
               tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
+              tickFormatter={(value) => value.slice(0, 6)}
             />
             <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
             <defs>

@@ -174,10 +174,15 @@ class WhatsAppAccountController extends Controller
                 ?? $data['messaging_limit_tier']
                 ?? $whatsappAccount->messaging_limit_tier;
 
+            $healthStatus = is_array($data['health_status'] ?? null)
+                ? ($data['health_status']['can_send_message'] ?? $whatsappAccount->health_status)
+                : ($data['health_status'] ?? $whatsappAccount->health_status);
+
             $whatsappAccount->update([
                 'display_phone_number' => $data['display_phone_number'] ?? $whatsappAccount->display_phone_number,
                 'verified_name' => $data['verified_name'] ?? $whatsappAccount->verified_name,
                 'quality_rating' => $data['quality_rating'] ?? $whatsappAccount->quality_rating,
+                'health_status' => $healthStatus ? (string) $healthStatus : null,
                 'messaging_limit_tier' => $messagingLimit ? (string) $messagingLimit : null,
                 'status' => WhatsAppAccountStatus::CONNECTED,
                 'last_synced_at' => now(),
@@ -191,6 +196,7 @@ class WhatsAppAccountController extends Controller
                         'status' => WhatsAppAccountStatus::CONNECTED->value,
                         'verified_name' => $whatsappAccount->verified_name,
                         'quality_rating' => $whatsappAccount->quality_rating,
+                        'health_status' => $whatsappAccount->health_status,
                         'messaging_limit_tier' => $whatsappAccount->messaging_limit_tier,
                     ],
                 ]);

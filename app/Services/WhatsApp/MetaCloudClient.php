@@ -68,7 +68,7 @@ class MetaCloudClient
     public function verifyPhoneNumber(string $phoneNumberId, string $accessToken): array
     {
         $response = $this->request($accessToken)->get("/{$phoneNumberId}", [
-            'fields' => 'id,display_phone_number,verified_name,quality_rating,whatsapp_business_manager_messaging_limit,messaging_limit_tier',
+            'fields' => 'id,display_phone_number,verified_name,quality_rating,health_status,whatsapp_business_manager_messaging_limit,messaging_limit_tier',
         ]);
 
         return $this->handleResponse($response);

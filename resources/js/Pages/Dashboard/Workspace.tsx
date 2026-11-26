@@ -90,6 +90,7 @@ interface WhatsAppAccountData {
   status: string;
   verified_name?: string | null;
   quality_rating?: string | null;
+  health_status?: string | null;
   tier?: string | null;
   sent_today_contacts?: number;
   webhook_verify_token?: string | null;
@@ -605,9 +606,28 @@ export default function Workspace({
                             {initialWhatsAppAccount.quality_rating && (
                               <Badge
                                 variant='secondary'
-                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground capitalize'
+                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground capitalize whitespace-nowrap'
                               >
                                 Quality: <span className='text-foreground ml-1'>{initialWhatsAppAccount.quality_rating.toLowerCase()}</span>
+                              </Badge>
+                            )}
+                            {initialWhatsAppAccount.health_status && (
+                              <Badge
+                                variant='secondary'
+                                className='inline-flex items-center px-3 py-1 border-0 rounded-md text-xs font-medium bg-muted/40 text-muted-foreground capitalize whitespace-nowrap'
+                              >
+                                Health:{' '}
+                                <span
+                                  className={
+                                    initialWhatsAppAccount.health_status === 'AVAILABLE'
+                                      ? 'text-emerald-500 ml-1'
+                                      : initialWhatsAppAccount.health_status === 'LIMITED'
+                                      ? 'text-amber-500 ml-1'
+                                      : 'text-red-500 ml-1'
+                                  }
+                                >
+                                  {initialWhatsAppAccount.health_status.toLowerCase()}
+                                </span>
                               </Badge>
                             )}
                             {initialWhatsAppAccount.tier ? (
