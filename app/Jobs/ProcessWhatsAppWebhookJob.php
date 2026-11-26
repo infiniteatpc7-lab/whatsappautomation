@@ -340,6 +340,15 @@ class ProcessWhatsAppWebhookJob implements ShouldQueue
             if (! $alreadyReplied) {
                 $lastCampaignMessage->campaign?->increment('replied_count');
             }
+
+            // Track Quick Reply / Interactive button taps as broadcast clicks
+            if (in_array($messageType, [MessageType::BUTTON, MessageType::INTERACTIVE], true)) {
+                $recipient = CampaignRecipient::where('message_id', $lastCampaignMessage->id)->first();
+                if ($recipient && $recipient->clicked_at === null) {
+                    $recipient->update(['clicked_at' => now()]);
+                    $lastCampaignMessage->campaign?->increment('clicks_count');
+                }
+            }
         }
     }
 

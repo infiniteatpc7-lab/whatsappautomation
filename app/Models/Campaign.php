@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'read_count',
     'failed_count',
     'replied_count',
+    'clicks_count',
 ])]
 class Campaign extends Model
 {
@@ -56,6 +57,7 @@ class Campaign extends Model
             'read_count' => 'integer',
             'failed_count' => 'integer',
             'replied_count' => 'integer',
+            'clicks_count' => 'integer',
         ];
     }
 

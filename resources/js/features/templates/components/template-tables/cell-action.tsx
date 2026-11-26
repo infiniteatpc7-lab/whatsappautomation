@@ -23,6 +23,7 @@ interface CellActionProps {
 
 export function CellAction({ data }: CellActionProps) {
   const [openPreview, setOpenPreview] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const canEdit = Boolean(
     data.meta_template_id && ['APPROVED', 'REJECTED', 'PAUSED'].includes(data.status)
@@ -31,6 +32,34 @@ export function CellAction({ data }: CellActionProps) {
   const copyName = () => {
     navigator.clipboard.writeText(data.name);
     toast.success(`Template name "${data.name}" copied to clipboard.`);
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+      const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+      const csrf = match ? decodeURIComponent(match[1]) : '';
+      const res = await fetch(`/dashboard/templates/${data.id}`, {
+        method: 'DELETE',
+        headers: {
+          Accept: 'application/json',
+          'X-XSRF-TOKEN': csrf,
+        },
+        credentials: 'same-origin',
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.message || 'Failed to delete template.');
+        return;
+      }
+      toast.success(json.message || 'Template deleted.');
+      router.reload({ only: ['initialTemplates'] });
+    } catch {
+      toast.error('Network error while deleting template.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -80,6 +109,15 @@ export function CellAction({ data }: CellActionProps) {
             }
           >
             <Icons.externalLink className='mr-2 h-4 w-4 shrink-0' /> View in Meta
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={isDeleting}
+            onClick={handleDelete}
+            className='whitespace-nowrap text-destructive focus:text-destructive'
+          >
+            <Icons.trash className='mr-2 h-4 w-4 shrink-0' />
+            {isDeleting ? 'Deleting...' : 'Delete Template'}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

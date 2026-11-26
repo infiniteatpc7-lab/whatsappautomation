@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PageContainer from '@/components/layout/page-container';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
@@ -34,6 +34,10 @@ export default function TemplatesPage() {
 
   const [templates, setTemplates] = useState<WhatsAppTemplate[]>(initialTemplates);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    setTemplates(initialTemplates);
+  }, [initialTemplates]);
 
   const handleSync = async () => {
     setIsSyncing(true);

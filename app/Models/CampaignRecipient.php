@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'sent_at',
     'delivered_at',
     'read_at',
+    'clicked_at',
 ])]
 class CampaignRecipient extends Model
 {
@@ -39,6 +40,7 @@ class CampaignRecipient extends Model
             'sent_at' => 'datetime',
             'delivered_at' => 'datetime',
             'read_at' => 'datetime',
+            'clicked_at' => 'datetime',
         ];
     }
 

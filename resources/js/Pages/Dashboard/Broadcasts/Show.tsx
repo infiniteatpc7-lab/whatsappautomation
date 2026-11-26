@@ -269,7 +269,7 @@ export default function BroadcastShowPage() {
                 />
                 <CircularStat
                   label='Clicks'
-                  count={0}
+                  count={campaign.clicks_count ?? 0}
                   total={campaign.delivered_count}
                 />
                 <CircularStat

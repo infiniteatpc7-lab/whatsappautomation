@@ -233,6 +233,26 @@ class MetaCloudClient
     }
 
     /**
+     * Delete a message template from Meta WABA.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws MetaApiException
+     */
+    public function deleteTemplate(WhatsAppAccount $account, string $name, ?string $metaTemplateId = null): array
+    {
+        $query = ['name' => $name];
+        if ($metaTemplateId) {
+            $query['hsm_id'] = $metaTemplateId;
+        }
+
+        $response = $this->request($account->access_token)
+            ->delete("/{$account->waba_id}/message_templates", $query);
+
+        return $this->handleResponse($response);
+    }
+
+    /**
      * Get media download URL and metadata for a Meta media ID.
      *
      * @return array<string, mixed>

@@ -335,4 +335,56 @@ class BroadcastTest extends TestCase
             'body' => 'Hello ORD-999, welcome!',
         ]);
     }
+
+    public function test_tracked_broadcast_link_increments_clicks_and_redirects(): void
+    {
+        [$workspace, , $account] = $this->createWorkspaceWithAccount('Click Corp', 'click@example.com');
+
+        $template = Template::create([
+            'workspace_id' => $workspace->id,
+            'whatsapp_account_id' => $account->id,
+            'meta_template_id' => 'meta_tpl_clk',
+            'name' => 'clk_tpl',
+            'language' => 'en_US',
+            'category' => TemplateCategory::MARKETING,
+            'status' => TemplateStatus::APPROVED,
+            'header_type' => 'NONE',
+            'body_text' => 'Visit our site!',
+            'components' => [['type' => 'BODY', 'text' => 'Visit our site!']],
+        ]);
+
+        $contact = Contact::create([
+            'workspace_id' => $workspace->id,
+            'wa_id' => '919876543219',
+            'name' => 'Click User',
+            'opt_in_status' => OptInStatus::OPTED_IN,
+        ]);
+
+        $campaign = Campaign::create([
+            'workspace_id' => $workspace->id,
+            'whatsapp_account_id' => $account->id,
+            'template_id' => $template->id,
+            'name' => 'Click Campaign',
+            'status' => CampaignStatus::COMPLETED,
+            'total_recipients' => 1,
+        ]);
+
+        $recipient = $campaign->recipients()->create([
+            'contact_id' => $contact->id,
+            'status' => \App\Enums\RecipientStatus::DELIVERED,
+        ]);
+
+        $link = \App\Models\CampaignLink::create([
+            'campaign_id' => $campaign->id,
+            'campaign_recipient_id' => $recipient->id,
+            'token' => 'testclk123',
+            'target_url' => 'https://example.com/offer',
+        ]);
+
+        $response = $this->get("/r/{$link->token}");
+
+        $response->assertRedirect('https://example.com/offer');
+        $this->assertSame(1, $campaign->fresh()->clicks_count);
+        $this->assertNotNull($recipient->fresh()->clicked_at);
+    }
 }

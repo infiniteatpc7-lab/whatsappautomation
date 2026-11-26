@@ -572,6 +572,7 @@ class CampaignController extends Controller
             'read_count' => $c->read_count,
             'failed_count' => $c->failed_count,
             'replied_count' => $c->replied_count,
+            'clicks_count' => $c->clicks_count ?? 0,
             'smart_sender_enabled' => (bool) $c->smart_sender_enabled,
             'retry_window_hours' => (int) ($c->retry_window_hours ?? 36),
             'scheduled_at' => $c->scheduled_at?->toISOString(),

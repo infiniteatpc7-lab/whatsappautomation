@@ -36,6 +36,7 @@ export interface CampaignItem {
   read_count: number;
   failed_count: number;
   replied_count: number;
+  clicks_count: number;
   smart_sender_enabled: boolean;
   retry_window_hours: number;
   scheduled_at: string | null;

@@ -425,6 +425,49 @@ class TemplateController extends Controller
     }
 
     /**
+     * Delete a message template from Meta Cloud API and soft-delete locally.
+     */
+    public function destroy(
+        Template $template,
+        WorkspaceContext $workspaceContext,
+        MetaCloudClient $metaClient,
+    ): JsonResponse {
+        $workspace = $workspaceContext->getWorkspace();
+        if (! $workspace || (int) $template->workspace_id !== (int) $workspace->id) {
+            return response()->json(['message' => 'Template not found.'], 404);
+        }
+
+        /** @var WhatsAppAccount|null $account */
+        $account = $workspace->whatsappAccounts()
+            ->where('status', WhatsAppAccountStatus::CONNECTED)
+            ->first();
+
+        if ($account && $account->waba_id && $template->meta_template_id) {
+            try {
+                $metaClient->deleteTemplate($account, $template->name, $template->meta_template_id);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Template deletion rejected by Meta Cloud API', [
+                    'template_id' => $template->id,
+                    'name' => $template->name,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return response()->json([
+                    'message' => 'Failed to delete template on Meta: ' . $e->getMessage(),
+                ], 422);
+            }
+        }
+
+        $name = $template->name;
+        $template->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Template '{$name}' deleted successfully.",
+        ]);
+    }
+
+    /**
      * Validate create or edit template request fields.
      *
      * @return array<string, mixed>

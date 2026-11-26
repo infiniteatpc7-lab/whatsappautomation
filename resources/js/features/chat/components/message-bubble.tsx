@@ -30,7 +30,15 @@ function renderFormattedText(text: string) {
   const parts = text.split(urlRegex);
   return parts.map((part, index) => {
     if (part.match(urlRegex)) {
-      return (
+      const formattedTime = message.created_at
+    ? new Date(message.created_at).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+    : message.timestamp;
+
+  return (
         <a
           key={index}
           href={part}
@@ -51,6 +59,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.sender === 'user';
   const urlMatch = message.text ? extractUrl(message.text) : null;
   const hostname = urlMatch ? getHostname(urlMatch) : null;
+
+  const formattedTime = message.created_at
+    ? new Date(message.created_at).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+    : message.timestamp;
 
   return (
     <motion.div
@@ -137,7 +153,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                 : 'text-[#667781] dark:text-[#8696a0]'
             )}
           >
-            <span>{message.timestamp}</span>
+            <span>{formattedTime}</span>
             {isUser && (
               message.status === 'read' ? (
                 <Icons.checks className='size-3.5 text-[#53bdeb]' title='Read' />

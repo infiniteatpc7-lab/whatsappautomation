@@ -397,4 +397,35 @@ class TemplateTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    public function test_template_can_be_deleted_from_meta_and_locally(): void
+    {
+        [$workspace, $user] = $this->createWorkspaceWithUser('Delete Corp', 'del@example.com');
+        $account = $this->createAccount($workspace);
+
+        $template = Template::create([
+            'workspace_id' => $workspace->id,
+            'whatsapp_account_id' => $account->id,
+            'meta_template_id' => 'meta_tpl_del_1',
+            'name' => 'old_promo',
+            'language' => 'en_US',
+            'category' => TemplateCategory::MARKETING,
+            'status' => TemplateStatus::APPROVED,
+            'header_type' => 'NONE',
+            'body_text' => 'Old promo',
+            'components' => [['type' => 'BODY', 'text' => 'Old promo']],
+        ]);
+
+        Http::fake([
+            'https://graph.facebook.com/*/waba_test_123/message_templates*' => Http::response([
+                'success' => true,
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($user)->deleteJson("/dashboard/templates/{$template->id}");
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+        $this->assertSoftDeleted('templates', ['id' => $template->id]);
+    }
 }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SessionSecurityController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\CampaignClickController;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ContactController;
@@ -23,6 +24,8 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return redirect()->route('dashboard.overview');
 });
+
+Route::get('/r/{token}', CampaignClickController::class)->name('campaigns.click');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -102,6 +105,7 @@ Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group
     Route::post('/templates', [TemplateController::class, 'store'])->name('dashboard.templates.store');
     Route::get('/templates/{template}/edit', [TemplateController::class, 'edit'])->name('dashboard.templates.edit');
     Route::patch('/templates/{template}', [TemplateController::class, 'update'])->name('dashboard.templates.update');
+    Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])->name('dashboard.templates.destroy');
     Route::post('/templates/sync', [TemplateController::class, 'sync'])->name('dashboard.templates.sync');
 
     // Product routes
