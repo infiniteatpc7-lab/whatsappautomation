@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from 'next-themes';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,12 @@ export function IPhonePreview({
   showThemeToggle = true,
 }: IPhonePreviewProps) {
   const { resolvedTheme } = useTheme();
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{ isDown: boolean; startX: number; scrollLeft: number }>({
+    isDown: false,
+    startX: 0,
+    scrollLeft: 0,
+  });
 
   // Initialize with dashboard theme or controlled prop
   const [internalTheme, setInternalTheme] = useState<PreviewTheme>(
@@ -341,7 +347,7 @@ export function IPhonePreview({
                           <img
                             src={headerMediaUrl}
                             alt={headerMediaName || 'Template header'}
-                            className='w-full h-36 object-cover'
+                            className='w-full max-h-44 object-contain bg-black/10 dark:bg-black/30'
                           />
                         ) : (
                           <div className='h-32 flex flex-col items-center justify-center gap-1.5 text-muted-foreground'>
@@ -358,7 +364,7 @@ export function IPhonePreview({
                           <video
                             src={headerMediaUrl}
                             controls
-                            className='w-full h-36 object-cover'
+                            className='w-full max-h-44 object-contain bg-black'
                           />
                         ) : (
                           <div className='h-32 flex flex-col items-center justify-center gap-1.5 text-white/70'>
@@ -462,38 +468,68 @@ export function IPhonePreview({
 
                 {/* Horizontal Scrollable Carousel Cards Strip */}
                 {carouselCards.length > 0 && (
-                  <div className='ml-2 flex gap-2 overflow-x-auto pb-1 pr-2 snap-x'>
+                  <div
+                    ref={carouselRef}
+                    onMouseDown={(e) => {
+                      if (!carouselRef.current) return;
+                      dragState.current = {
+                        isDown: true,
+                        startX: e.pageX - carouselRef.current.offsetLeft,
+                        scrollLeft: carouselRef.current.scrollLeft,
+                      };
+                    }}
+                    onMouseLeave={() => {
+                      dragState.current.isDown = false;
+                    }}
+                    onMouseUp={() => {
+                      dragState.current.isDown = false;
+                    }}
+                    onMouseMove={(e) => {
+                      if (!dragState.current.isDown || !carouselRef.current) return;
+                      e.preventDefault();
+                      const x = e.pageX - carouselRef.current.offsetLeft;
+                      const walk = x - dragState.current.startX;
+                      carouselRef.current.scrollLeft = dragState.current.scrollLeft - walk;
+                    }}
+                    className='ml-2 flex gap-2 overflow-x-auto pb-1 pr-2 cursor-grab active:cursor-grabbing select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+                  >
                     {carouselCards.map((card, cardIdx) => (
                       <div
                         key={cardIdx}
                         className={cn(
-                          'w-[220px] shrink-0 snap-start rounded-lg overflow-hidden shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] border',
+                          'w-[220px] shrink-0 snap-start rounded-lg overflow-hidden shadow-[0_1px_0.5px_rgba(0,0,0,0.13)]',
                           isDark
-                            ? 'bg-[#242626] text-[#e9edef] border-white/10'
-                            : 'bg-white text-[#111b21] border-neutral-200/70'
+                            ? 'bg-[#242626] text-[#e9edef]'
+                            : 'bg-white text-[#111b21]'
                         )}
                       >
-                        {card.headerFormat === 'VIDEO' ? (
-                          card.mediaPreviewUrl ? (
-                            <video src={card.mediaPreviewUrl} controls className='w-full h-28 object-cover bg-black' />
+                        <div className='p-1 pb-0'>
+                          {card.headerFormat === 'VIDEO' ? (
+                            card.mediaPreviewUrl ? (
+                              <video
+                                src={card.mediaPreviewUrl}
+                                controls
+                                className='w-full h-36 object-contain bg-black rounded-lg overflow-hidden'
+                              />
+                            ) : (
+                              <div className='h-36 bg-black/80 rounded-lg flex flex-col items-center justify-center gap-1 text-white/70'>
+                                <Icons.video className='size-6 opacity-80' />
+                                <span className='text-[10px]'>Card {cardIdx + 1} Video</span>
+                              </div>
+                            )
+                          ) : card.mediaPreviewUrl ? (
+                            <img
+                              src={card.mediaPreviewUrl}
+                              alt={`Card ${cardIdx + 1}`}
+                              className='w-full h-36 object-contain bg-black/10 dark:bg-black/30 rounded-lg'
+                            />
                           ) : (
-                            <div className='h-28 bg-black/80 flex flex-col items-center justify-center gap-1 text-white/70'>
-                              <Icons.video className='size-6 opacity-80' />
-                              <span className='text-[10px]'>Card {cardIdx + 1} Video</span>
+                            <div className='h-36 bg-muted/40 rounded-lg flex flex-col items-center justify-center gap-1 text-muted-foreground'>
+                              <Icons.image className='size-6 opacity-60' />
+                              <span className='text-[10px]'>Card {cardIdx + 1} Image</span>
                             </div>
-                          )
-                        ) : card.mediaPreviewUrl ? (
-                          <img
-                            src={card.mediaPreviewUrl}
-                            alt={`Card ${cardIdx + 1}`}
-                            className='w-full h-28 object-cover'
-                          />
-                        ) : (
-                          <div className='h-28 bg-muted/40 flex flex-col items-center justify-center gap-1 text-muted-foreground'>
-                            <Icons.image className='size-6 opacity-60' />
-                            <span className='text-[10px]'>Card {cardIdx + 1} Image</span>
-                          </div>
-                        )}
+                          )}
+                        </div>
                         <div className='p-2.5 text-[12px] leading-snug min-h-[44px]'>
                           {card.bodyText || (
                             <span className='italic opacity-50'>Card {cardIdx + 1} description...</span>
