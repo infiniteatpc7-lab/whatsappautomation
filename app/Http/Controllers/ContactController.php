@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\OptInStatus;
+use App\Enums\WhatsAppAccountStatus;
 use App\Models\Contact;
 use App\Models\Tag;
 use App\Support\WorkspaceContext;
@@ -42,9 +43,14 @@ class ContactController extends Controller
             ])
             ->values();
 
+        $hasConnectedAccount = $workspace->whatsappAccounts()
+            ->where('status', WhatsAppAccountStatus::CONNECTED)
+            ->exists();
+
         return Inertia::render('Dashboard/Contacts/Index', [
             'initialContacts' => $contacts,
             'initialTags' => $tags,
+            'hasConnectedAccount' => $hasConnectedAccount,
         ]);
     }
 
