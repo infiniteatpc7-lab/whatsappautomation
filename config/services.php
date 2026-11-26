@@ -38,6 +38,7 @@ return [
     'meta' => [
         'graph_base_url' => env('META_GRAPH_BASE_URL', 'https://graph.facebook.com'),
         'graph_version' => env('META_GRAPH_VERSION', 'v22.0'),
+        'app_id' => env('META_APP_ID'),
         'app_secret' => env('META_APP_SECRET'),
         'webhook_verify_token' => env('META_WEBHOOK_VERIFY_TOKEN'),
         'timeout' => (int) env('META_HTTP_TIMEOUT', 15),

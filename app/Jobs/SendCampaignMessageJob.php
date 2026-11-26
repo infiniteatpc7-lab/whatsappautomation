@@ -289,6 +289,42 @@ class SendCampaignMessageJob implements ShouldQueue
             }
         }
 
+        // 4. Carousel component cards (runtime media URLs per card)
+        $carouselComp = collect($templateComponents)->firstWhere('type', 'CAROUSEL');
+        if (is_array($carouselComp) && ! empty($carouselComp['cards'])) {
+            $cardsPayload = [];
+            $cardMappings = $mapping['carousel_cards'] ?? [];
+
+            foreach ($carouselComp['cards'] as $cardIndex => $card) {
+                $cardHeader = collect($card['components'] ?? [])->firstWhere('type', 'HEADER');
+                $cardFormat = strtolower((string) ($cardHeader['format'] ?? 'IMAGE'));
+                $mediaKey = in_array($cardFormat, ['image', 'video'], true) ? $cardFormat : 'image';
+                $mediaUrl = trim((string) ($cardMappings[$cardIndex]['media_url'] ?? ''));
+
+                if ($mediaUrl !== '') {
+                    $cardsPayload[] = [
+                        'card_index' => (int) $cardIndex,
+                        'components' => [
+                            [
+                                'type' => 'header',
+                                'parameters' => [[
+                                    'type' => $mediaKey,
+                                    $mediaKey => ['link' => $mediaUrl],
+                                ]],
+                            ],
+                        ],
+                    ];
+                }
+            }
+
+            if ($cardsPayload !== []) {
+                $components[] = [
+                    'type' => 'carousel',
+                    'cards' => $cardsPayload,
+                ];
+            }
+        }
+
         return [$components, $resolvedVars, $renderedBody];
     }
 

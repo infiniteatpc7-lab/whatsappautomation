@@ -5,10 +5,22 @@ import { cn } from '@/lib/utils';
 
 export type PreviewTheme = 'dark' | 'light';
 
+export interface CarouselPreviewCard {
+  headerFormat: 'IMAGE' | 'VIDEO';
+  mediaPreviewUrl?: string;
+  bodyText: string;
+  buttons?: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+    text: string;
+  }>;
+}
+
 interface IPhonePreviewProps {
   verifiedName?: string | null;
-  headerType: 'NONE' | 'TEXT';
-  headerText: string;
+  headerType: 'NONE' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  headerText?: string;
+  headerMediaUrl?: string;
+  headerMediaName?: string;
   bodyContent: React.ReactNode;
   footerText?: string;
   buttons?: Array<{
@@ -17,6 +29,7 @@ interface IPhonePreviewProps {
     url?: string;
     phone_number?: string;
   }>;
+  carouselCards?: CarouselPreviewCard[];
   theme?: PreviewTheme;
   onThemeChange?: (theme: PreviewTheme) => void;
   screenHeight?: string;
@@ -27,10 +40,13 @@ interface IPhonePreviewProps {
 export function IPhonePreview({
   verifiedName = 'Business Account',
   headerType,
-  headerText,
+  headerText = '',
+  headerMediaUrl,
+  headerMediaName,
   bodyContent,
   footerText,
   buttons = [],
+  carouselCards = [],
   theme: controlledTheme,
   onThemeChange,
   screenHeight = 'h-[640px]',
@@ -317,12 +333,70 @@ export function IPhonePreview({
                   </svg>
 
                   {/* Main Content Area */}
-                  <div className='p-3.5 space-y-2.5'>
+                  <div className='p-2.5 space-y-2'>
+                    {/* Media Header (Image / Video / Document) */}
+                    {headerType === 'IMAGE' && (
+                      <div className='rounded-md overflow-hidden bg-muted/40 border border-black/5 dark:border-white/10'>
+                        {headerMediaUrl ? (
+                          <img
+                            src={headerMediaUrl}
+                            alt={headerMediaName || 'Template header'}
+                            className='w-full h-36 object-cover'
+                          />
+                        ) : (
+                          <div className='h-32 flex flex-col items-center justify-center gap-1.5 text-muted-foreground'>
+                            <Icons.image className='size-7 opacity-60' />
+                            <span className='text-[10px]'>Image Header</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {headerType === 'VIDEO' && (
+                      <div className='rounded-md overflow-hidden bg-black/80 border border-black/10 dark:border-white/10'>
+                        {headerMediaUrl ? (
+                          <video
+                            src={headerMediaUrl}
+                            controls
+                            className='w-full h-36 object-cover'
+                          />
+                        ) : (
+                          <div className='h-32 flex flex-col items-center justify-center gap-1.5 text-white/70'>
+                            <Icons.video className='size-7 opacity-80' />
+                            <span className='text-[10px]'>Video Header</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {headerType === 'DOCUMENT' && (
+                      <div
+                        className={cn(
+                          'rounded-md p-2.5 flex items-center gap-2.5 border',
+                          isDark
+                            ? 'bg-white/5 border-white/10'
+                            : 'bg-neutral-50 border-neutral-200'
+                        )}
+                      >
+                        <div className='size-9 rounded-md bg-red-500/15 text-red-500 flex items-center justify-center shrink-0'>
+                          <Icons.fileTypePdf className='size-5' />
+                        </div>
+                        <div className='min-w-0 flex-1'>
+                          <p className='text-[12px] font-medium truncate'>
+                            {headerMediaName || 'Document.pdf'}
+                          </p>
+                          <p className={cn('text-[10px]', isDark ? 'text-white/50' : 'text-[#667781]')}>
+                            PDF Document
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Message Header (if text) */}
                     {headerType === 'TEXT' && headerText && (
                       <div
                         className={cn(
-                          'font-bold text-sm pb-1.5 border-b leading-snug',
+                          'font-bold text-sm pb-1.5 border-b leading-snug px-1',
                           isDark ? 'text-white border-white/10' : 'text-[#111b21] border-neutral-100'
                         )}
                       >
@@ -333,7 +407,7 @@ export function IPhonePreview({
                     {/* Message Body */}
                     <div
                       className={cn(
-                        'text-[13px] leading-relaxed',
+                        'text-[13px] leading-relaxed px-1',
                         isDark ? 'text-[#e9edef]' : 'text-[#111b21]'
                       )}
                     >
@@ -344,7 +418,7 @@ export function IPhonePreview({
                     {footerText && (
                       <div
                         className={cn(
-                          'text-[11px] pt-1 leading-normal',
+                          'text-[11px] pt-1 leading-normal px-1',
                           isDark ? 'text-white/50' : 'text-[#667781]'
                         )}
                       >
@@ -355,7 +429,7 @@ export function IPhonePreview({
                     {/* Timestamp */}
                     <div
                       className={cn(
-                        'flex items-center justify-end gap-1 text-[10px] pt-0.5',
+                        'flex items-center justify-end gap-1 text-[10px] pt-0.5 px-1',
                         isDark ? 'text-white/50' : 'text-[#667781]'
                       )}
                     >
@@ -364,7 +438,7 @@ export function IPhonePreview({
                   </div>
 
                   {/* Integrated Action Buttons at the Bottom (Separated by Divider, Matching User's Screenshot) */}
-                  {buttons.length > 0 && (
+                  {buttons.length > 0 && carouselCards.length === 0 && (
                     <div className='border-t divide-y border-neutral-100 dark:border-white/10 dark:divide-white/10 bg-transparent'>
                       {buttons.map((btn, i) => (
                         <div
@@ -385,6 +459,68 @@ export function IPhonePreview({
                     </div>
                   )}
                 </div>
+
+                {/* Horizontal Scrollable Carousel Cards Strip */}
+                {carouselCards.length > 0 && (
+                  <div className='ml-2 flex gap-2 overflow-x-auto pb-1 pr-2 snap-x'>
+                    {carouselCards.map((card, cardIdx) => (
+                      <div
+                        key={cardIdx}
+                        className={cn(
+                          'w-[220px] shrink-0 snap-start rounded-lg overflow-hidden shadow-[0_1px_0.5px_rgba(0,0,0,0.13)] border',
+                          isDark
+                            ? 'bg-[#242626] text-[#e9edef] border-white/10'
+                            : 'bg-white text-[#111b21] border-neutral-200/70'
+                        )}
+                      >
+                        {card.headerFormat === 'VIDEO' ? (
+                          card.mediaPreviewUrl ? (
+                            <video src={card.mediaPreviewUrl} controls className='w-full h-28 object-cover bg-black' />
+                          ) : (
+                            <div className='h-28 bg-black/80 flex flex-col items-center justify-center gap-1 text-white/70'>
+                              <Icons.video className='size-6 opacity-80' />
+                              <span className='text-[10px]'>Card {cardIdx + 1} Video</span>
+                            </div>
+                          )
+                        ) : card.mediaPreviewUrl ? (
+                          <img
+                            src={card.mediaPreviewUrl}
+                            alt={`Card ${cardIdx + 1}`}
+                            className='w-full h-28 object-cover'
+                          />
+                        ) : (
+                          <div className='h-28 bg-muted/40 flex flex-col items-center justify-center gap-1 text-muted-foreground'>
+                            <Icons.image className='size-6 opacity-60' />
+                            <span className='text-[10px]'>Card {cardIdx + 1} Image</span>
+                          </div>
+                        )}
+                        <div className='p-2.5 text-[12px] leading-snug min-h-[44px]'>
+                          {card.bodyText || (
+                            <span className='italic opacity-50'>Card {cardIdx + 1} description...</span>
+                          )}
+                        </div>
+                        {card.buttons && card.buttons.length > 0 && (
+                          <div className='border-t divide-y border-neutral-100 dark:border-white/10 dark:divide-white/10'>
+                            {card.buttons.map((btn, bi) => (
+                              <div
+                                key={bi}
+                                className={cn(
+                                  'w-full py-2 px-2.5 text-center text-[12px] font-semibold flex items-center justify-center gap-1.5',
+                                  isDark ? 'text-[#00a884]' : 'text-[#008069]'
+                                )}
+                              >
+                                {btn.type === 'URL' && <Icons.externalLink className='size-3 shrink-0' />}
+                                {btn.type === 'PHONE_NUMBER' && <Icons.phone className='size-3 shrink-0' />}
+                                {btn.type === 'QUICK_REPLY' && <Icons.reply className='size-3 shrink-0' />}
+                                <span className='truncate'>{btn.text || `Button ${bi + 1}`}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

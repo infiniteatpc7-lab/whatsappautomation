@@ -55,6 +55,34 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : '';
 }
 
+interface CarouselCardDraft {
+  header_format: 'IMAGE' | 'VIDEO';
+  header_handle: string;
+  mediaPreviewUrl: string;
+  mediaName: string;
+  isUploading: boolean;
+  body_text: string;
+  buttons: Array<{
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+    text: string;
+    url?: string;
+    url_example?: string;
+    phone_number?: string;
+  }>;
+}
+
+function createEmptyCarouselCard(): CarouselCardDraft {
+  return {
+    header_format: 'IMAGE',
+    header_handle: '',
+    mediaPreviewUrl: '',
+    mediaName: '',
+    isUploading: false,
+    body_text: '',
+    buttons: [{ type: 'QUICK_REPLY', text: '' }],
+  };
+}
+
 export default function CreateTemplatePage() {
   const { hasConnectedAccount, activeAccount, template } = usePage<CreateTemplatePageProps>().props;
   const isEdit = Boolean(template);
@@ -77,14 +105,123 @@ export default function CreateTemplatePage() {
   );
   const [language, setLanguage] = useState(template?.language ?? 'en_US');
 
-  // Header
-  const [headerType, setHeaderType] = useState<'NONE' | 'TEXT'>(
-    initialHeader && (initialHeader.format === 'TEXT' || !initialHeader.format) && initialHeader.text
-      ? 'TEXT'
-      : 'NONE'
+  const initialCarousel = template?.components?.find((c) => c.type === 'CAROUSEL');
+  const [templateType, setTemplateType] = useState<'STANDARD' | 'CAROUSEL'>(
+    initialCarousel ? 'CAROUSEL' : 'STANDARD'
   );
+
+  // Header
+  const [headerType, setHeaderType] = useState<'NONE' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'>(() => {
+    if (initialHeader?.format === 'IMAGE' || initialHeader?.format === 'VIDEO' || initialHeader?.format === 'DOCUMENT') {
+      return initialHeader.format;
+    }
+    if (initialHeader && (initialHeader.format === 'TEXT' || !initialHeader.format) && initialHeader.text) {
+      return 'TEXT';
+    }
+    return 'NONE';
+  });
   const [headerText, setHeaderText] = useState(initialHeader?.text ?? '');
   const [headerExample, setHeaderExample] = useState(initialHeader?.example?.header_text?.[0] ?? '');
+  const [headerHandle, setHeaderHandle] = useState(initialHeader?.example?.header_handle?.[0] ?? '');
+  const [headerMediaName, setHeaderMediaName] = useState('');
+  const [headerMediaPreviewUrl, setHeaderMediaPreviewUrl] = useState('');
+  const [isUploadingHeader, setIsUploadingHeader] = useState(false);
+
+  // Carousel Cards (2-10)
+  const [carouselCards, setCarouselCards] = useState<CarouselCardDraft[]>(() => {
+    if (initialCarousel?.cards && initialCarousel.cards.length >= 2) {
+      return initialCarousel.cards.map((card) => {
+        const cardHeader = card.components.find((c) => c.type === 'HEADER');
+        const cardBody = card.components.find((c) => c.type === 'BODY');
+        const cardButtons = card.components.find((c) => c.type === 'BUTTONS');
+        return {
+          header_format: cardHeader?.format === 'VIDEO' ? 'VIDEO' : 'IMAGE',
+          header_handle: cardHeader?.example?.header_handle?.[0] ?? '',
+          mediaPreviewUrl: '',
+          mediaName: cardHeader?.example?.header_handle?.[0] ? 'Existing Meta sample' : '',
+          isUploading: false,
+          body_text: cardBody?.text ?? '',
+          buttons:
+            cardButtons?.buttons
+              ?.filter((b) => b.type !== 'COPY_CODE')
+              .map((b) => ({
+                type: b.type as 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER',
+                text: b.text,
+                url: b.url,
+                phone_number: b.phone_number,
+              })) ?? [],
+        };
+      });
+    }
+    return [createEmptyCarouselCard(), createEmptyCarouselCard()];
+  });
+
+  const uploadSampleFile = async (file: File): Promise<{ header_handle: string; file_name: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/dashboard/templates/upload-sample', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'X-XSRF-TOKEN': getCsrfToken(),
+      },
+      credentials: 'same-origin',
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.header_handle) {
+      throw new Error(data.message || 'Failed to upload sample media to Meta.');
+    }
+
+    return {
+      header_handle: data.header_handle,
+      file_name: data.file_name || file.name,
+    };
+  };
+
+  const handleHeaderMediaUpload = async (file: File) => {
+    setIsUploadingHeader(true);
+    try {
+      const { header_handle, file_name } = await uploadSampleFile(file);
+      setHeaderHandle(header_handle);
+      setHeaderMediaName(file_name);
+      if (headerType === 'IMAGE' || headerType === 'VIDEO') {
+        setHeaderMediaPreviewUrl(URL.createObjectURL(file));
+      } else {
+        setHeaderMediaPreviewUrl('');
+      }
+      toast.success(`Uploaded ${file_name} to Meta.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to upload media sample.');
+    } finally {
+      setIsUploadingHeader(false);
+    }
+  };
+
+  const handleCarouselCardUpload = async (cardIndex: number, file: File) => {
+    setCarouselCards((prev) =>
+      prev.map((c, i) => (i === cardIndex ? { ...c, isUploading: true } : c))
+    );
+    try {
+      const { header_handle, file_name } = await uploadSampleFile(file);
+      const previewUrl = URL.createObjectURL(file);
+      setCarouselCards((prev) =>
+        prev.map((c, i) =>
+          i === cardIndex
+            ? { ...c, header_handle, mediaName: file_name, mediaPreviewUrl: previewUrl, isUploading: false }
+            : c
+        )
+      );
+      toast.success(`Card ${cardIndex + 1} media uploaded to Meta.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to upload Card ${cardIndex + 1} media.`);
+      setCarouselCards((prev) =>
+        prev.map((c, i) => (i === cardIndex ? { ...c, isUploading: false } : c))
+      );
+    }
+  };
 
   // Body
   const [bodyText, setBodyText] = useState(initialBody?.text ?? template?.body_text ?? '');
@@ -204,6 +341,29 @@ export default function CreateTemplatePage() {
       return;
     }
 
+    if (templateType === 'STANDARD' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && !headerHandle) {
+      toast.error('Please upload a sample file for the media header before submitting.');
+      return;
+    }
+
+    if (templateType === 'CAROUSEL') {
+      if (carouselCards.length < 2 || carouselCards.length > 10) {
+        toast.error('Carousel templates must contain between 2 and 10 cards.');
+        return;
+      }
+      for (let i = 0; i < carouselCards.length; i++) {
+        const card = carouselCards[i];
+        if (!card.header_handle) {
+          toast.error(`Please upload a sample ${card.header_format.toLowerCase()} for Card ${i + 1}.`);
+          return;
+        }
+        if (!card.body_text.trim()) {
+          toast.error(`Please enter body text for Card ${i + 1}.`);
+          return;
+        }
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const endpoint = isEdit && template ? `/dashboard/templates/${template.id}` : '/dashboard/templates';
@@ -218,13 +378,30 @@ export default function CreateTemplatePage() {
         body: JSON.stringify({
           ...(isEdit ? {} : { name, language }),
           ...(!isApprovedEdit ? { category } : {}),
-          header_type: headerType,
-          header_text: headerType === 'TEXT' ? headerText : null,
-          header_example: headerType === 'TEXT' && headerText.includes('{{1}}') ? headerExample : null,
+          template_type: templateType,
+          header_type: templateType === 'CAROUSEL' ? 'NONE' : headerType,
+          header_text: templateType === 'STANDARD' && headerType === 'TEXT' ? headerText : null,
+          header_example:
+            templateType === 'STANDARD' && headerType === 'TEXT' && headerText.includes('{{1}}')
+              ? headerExample
+              : null,
+          header_handle:
+            templateType === 'STANDARD' && ['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType)
+              ? headerHandle
+              : null,
           body_text: bodyText,
           body_examples: bodyExamples,
-          footer_text: footerText || null,
-          buttons: buttons.length > 0 ? buttons : null,
+          footer_text: templateType === 'STANDARD' ? footerText || null : null,
+          buttons: templateType === 'STANDARD' && buttons.length > 0 ? buttons : null,
+          carousel_cards:
+            templateType === 'CAROUSEL'
+              ? carouselCards.map((c) => ({
+                  header_format: c.header_format,
+                  header_handle: c.header_handle,
+                  body_text: c.body_text,
+                  buttons: c.buttons,
+                }))
+              : null,
         }),
       });
 
@@ -410,9 +587,13 @@ export default function CreateTemplatePage() {
                       <select
                         id='template-category'
                         value={category}
-                        onChange={(e) =>
-                          setCategory(e.target.value as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION')
-                        }
+                        onChange={(e) => {
+                          const nextCat = e.target.value as 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
+                          setCategory(nextCat);
+                          if (nextCat !== 'MARKETING') {
+                            setTemplateType('STANDARD');
+                          }
+                        }}
                         disabled={isApprovedEdit}
                         className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60'
                       >
@@ -429,6 +610,43 @@ export default function CreateTemplatePage() {
                       </p>
                     </div>
                   </div>
+
+                  {category === 'MARKETING' && (
+                    <div className='flex items-center justify-between rounded-lg border border-border/70 p-3 bg-muted/10'>
+                      <div>
+                        <Label className='text-xs font-semibold'>Template Format</Label>
+                        <p className='text-[11px] text-muted-foreground'>
+                          Choose Standard message or scrollable multi-card Carousel (2–10 cards).
+                        </p>
+                      </div>
+                      <div className='flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border/60'>
+                        <button
+                          type='button'
+                          onClick={() => setTemplateType('STANDARD')}
+                          className={cn(
+                            'text-xs px-3 py-1 rounded-md transition-colors',
+                            templateType === 'STANDARD'
+                              ? 'bg-background text-foreground font-semibold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Standard
+                        </button>
+                        <button
+                          type='button'
+                          onClick={() => setTemplateType('CAROUSEL')}
+                          className={cn(
+                            'text-xs px-3 py-1 rounded-md transition-colors',
+                            templateType === 'CAROUSEL'
+                              ? 'bg-background text-foreground font-semibold shadow-xs'
+                              : 'text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          Carousel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className='space-y-1.5'>
                     <Label htmlFor='template-language' className='text-xs font-semibold'>
@@ -463,40 +681,47 @@ export default function CreateTemplatePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className='space-y-5'>
-                  {/* Header Component */}
+                  {/* Header Component (Standard templates only) */}
+                  {templateType === 'STANDARD' && (
                   <div className='rounded-lg border border-border/70 p-4 space-y-3 bg-muted/10'>
-                    <div className='flex items-center justify-between'>
+                    <div className='flex flex-wrap items-center justify-between gap-2'>
                       <div>
                         <Label className='text-xs font-semibold'>Header (Optional)</Label>
                         <p className='text-[11px] text-muted-foreground'>
-                          Add a prominent title line at the top of your message.
+                          Add a text title or media (Image, Video, PDF) at the top of your message.
                         </p>
                       </div>
-                      <div className='flex items-center gap-1.5 bg-muted p-0.5 rounded-lg border border-border/60'>
-                        <button
-                          type='button'
-                          onClick={() => setHeaderType('NONE')}
-                          className={cn(
-                            'text-xs px-3 py-1 rounded-md transition-colors',
-                            headerType === 'NONE'
-                              ? 'bg-background text-foreground font-semibold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
-                        >
-                          None
-                        </button>
-                        <button
-                          type='button'
-                          onClick={() => setHeaderType('TEXT')}
-                          className={cn(
-                            'text-xs px-3 py-1 rounded-md transition-colors',
-                            headerType === 'TEXT'
-                              ? 'bg-background text-foreground font-semibold shadow-xs'
-                              : 'text-muted-foreground hover:text-foreground'
-                          )}
-                        >
-                          Text
-                        </button>
+                      <div className='flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border/60'>
+                        {(
+                          [
+                            { id: 'NONE', label: 'None' },
+                            { id: 'TEXT', label: 'Text' },
+                            { id: 'IMAGE', label: 'Image' },
+                            { id: 'VIDEO', label: 'Video' },
+                            { id: 'DOCUMENT', label: 'PDF' },
+                          ] as const
+                        ).map((opt) => (
+                          <button
+                            key={opt.id}
+                            type='button'
+                            onClick={() => {
+                              setHeaderType(opt.id);
+                              if (opt.id !== headerType) {
+                                setHeaderHandle('');
+                                setHeaderMediaName('');
+                                setHeaderMediaPreviewUrl('');
+                              }
+                            }}
+                            className={cn(
+                              'text-xs px-2.5 py-1 rounded-md transition-colors',
+                              headerType === opt.id
+                                ? 'bg-background text-foreground font-semibold shadow-xs'
+                                : 'text-muted-foreground hover:text-foreground'
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -522,7 +747,65 @@ export default function CreateTemplatePage() {
                         )}
                       </div>
                     )}
+
+                    {(['IMAGE', 'VIDEO', 'DOCUMENT'] as const).includes(
+                      headerType as 'IMAGE' | 'VIDEO' | 'DOCUMENT'
+                    ) && (
+                      <div className='pt-1'>
+                        <label className='flex flex-col items-center justify-center border-2 border-dashed border-border/80 rounded-lg p-4 text-center cursor-pointer hover:border-primary/50 transition-colors bg-background/60'>
+                          <input
+                            type='file'
+                            className='hidden'
+                            accept={
+                              headerType === 'IMAGE'
+                                ? 'image/jpeg,image/png'
+                                : headerType === 'VIDEO'
+                                ? 'video/mp4'
+                                : 'application/pdf'
+                            }
+                            disabled={isUploadingHeader}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleHeaderMediaUpload(file);
+                              e.target.value = '';
+                            }}
+                          />
+                          {isUploadingHeader ? (
+                            <div className='flex items-center gap-2 text-xs text-muted-foreground py-2'>
+                              <Icons.spinner className='size-4 animate-spin text-primary' />
+                              <span>Uploading sample to Meta...</span>
+                            </div>
+                          ) : headerHandle ? (
+                            <div className='flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400 py-1'>
+                              <Icons.circleCheck className='size-4 shrink-0' />
+                              <span className='font-medium truncate max-w-[260px]'>
+                                {headerMediaName || 'Sample uploaded to Meta'}
+                              </span>
+                              <span className='text-[11px] text-muted-foreground underline ml-1'>
+                                Replace
+                              </span>
+                            </div>
+                          ) : (
+                            <div className='space-y-1 py-1'>
+                              <Icons.upload className='size-5 mx-auto text-muted-foreground' />
+                              <p className='text-xs font-medium'>
+                                Click to upload sample{' '}
+                                {headerType === 'IMAGE'
+                                  ? 'Image (JPG/PNG)'
+                                  : headerType === 'VIDEO'
+                                  ? 'Video (MP4)'
+                                  : 'PDF Document'}
+                              </p>
+                              <p className='text-[10px] text-muted-foreground'>
+                                Required by Meta for template review (max 16 MB).
+                              </p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    )}
                   </div>
+                  )}
 
                   {/* Body Component */}
                   <div className='space-y-2.5'>
@@ -599,123 +882,436 @@ export default function CreateTemplatePage() {
                     )}
                   </div>
 
-                  {/* Footer Component */}
-                  <div className='space-y-1.5'>
-                    <div className='flex justify-between items-center'>
-                      <div>
-                        <Label htmlFor='template-footer' className='text-xs font-semibold'>
-                          Footer (Optional)
-                        </Label>
-                        <p className='text-[11px] text-muted-foreground'>
-                          Short disclaimer, company tagline, or unsubscribe notice.
-                        </p>
-                      </div>
-                      <span className='text-[11px] text-muted-foreground'>{footerText.length} / 60</span>
-                    </div>
-                    <Input
-                      id='template-footer'
-                      placeholder='e.g. Reply STOP to opt out'
-                      value={footerText}
-                      onChange={(e) => setFooterText(e.target.value.slice(0, 60))}
-                      className='h-9 text-xs'
-                    />
-                  </div>
-
-                  {/* Buttons Component */}
-                  <div className='rounded-lg border border-border/70 p-4 space-y-3 bg-muted/10'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <Label className='text-xs font-semibold'>Interactive Buttons (Optional)</Label>
-                        <p className='text-[11px] text-muted-foreground'>
-                          Add Quick Reply or Website link buttons (up to 3 buttons).
-                        </p>
-                      </div>
-                      {buttons.length < 3 && (
-                        <Button
-                          type='button'
-                          variant='outline'
-                          size='sm'
-                          onClick={handleAddButton}
-                          className='h-7 px-2.5 text-xs gap-1.5'
-                        >
-                          <Icons.add className='size-3.5' />
-                          Add Button
-                        </Button>
-                      )}
-                    </div>
-
-                    {buttons.map((btn, index) => (
-                      <div
-                        key={index}
-                        className='rounded-md border border-border/60 p-3 space-y-2.5 bg-background shadow-xs'
-                      >
-                        <div className='flex items-center gap-2'>
-                          <select
-                            value={btn.type}
-                            onChange={(e) =>
-                              handleButtonChange(index, {
-                                type: e.target.value as 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER',
-                              })
-                            }
-                            className='h-8 rounded-md border border-input bg-background px-2.5 text-xs font-medium'
-                          >
-                            <option value='QUICK_REPLY'>Quick Reply</option>
-                            <option value='URL'>Website URL</option>
-                            <option value='PHONE_NUMBER'>Phone Number</option>
-                          </select>
-
-                          <Input
-                            placeholder='Button Label (max 25 chars)'
-                            value={btn.text}
-                            onChange={(e) =>
-                              handleButtonChange(index, { text: e.target.value.slice(0, 25) })
-                            }
-                            className='h-8 text-xs flex-1'
-                            required
-                          />
-
-                          <Button
-                            type='button'
-                            variant='ghost'
-                            size='icon'
-                            onClick={() => handleRemoveButton(index)}
-                            className='h-8 w-8 text-destructive hover:text-destructive'
-                          >
-                            <Icons.trash className='size-4' />
-                          </Button>
-                        </div>
-
-                        {btn.type === 'URL' && (
-                          <div className='space-y-1.5'>
-                            <Input
-                              placeholder='https://yourwebsite.com/orders'
-                              value={btn.url || ''}
-                              onChange={(e) => handleButtonChange(index, { url: e.target.value })}
-                              className='h-8 text-xs font-mono'
-                              required
-                            />
-                            <p className='text-[10px] text-muted-foreground'>
-                              Must include full URL with https://
+                  {templateType === 'STANDARD' && (
+                    <>
+                      {/* Footer Component */}
+                      <div className='space-y-1.5'>
+                        <div className='flex justify-between items-center'>
+                          <div>
+                            <Label htmlFor='template-footer' className='text-xs font-semibold'>
+                              Footer (Optional)
+                            </Label>
+                            <p className='text-[11px] text-muted-foreground'>
+                              Short disclaimer, company tagline, or unsubscribe notice.
                             </p>
                           </div>
-                        )}
+                          <span className='text-[11px] text-muted-foreground'>{footerText.length} / 60</span>
+                        </div>
+                        <Input
+                          id='template-footer'
+                          placeholder='e.g. Reply STOP to opt out'
+                          value={footerText}
+                          onChange={(e) => setFooterText(e.target.value.slice(0, 60))}
+                          className='h-9 text-xs'
+                        />
+                      </div>
 
-                        {btn.type === 'PHONE_NUMBER' && (
-                          <div className='space-y-1.5'>
-                            <Input
-                              placeholder='+919876543210 (International format with country code)'
-                              value={btn.phone_number || ''}
-                              onChange={(e) =>
-                                handleButtonChange(index, { phone_number: e.target.value })
+                      {/* Buttons Component */}
+                      <div className='rounded-lg border border-border/70 p-4 space-y-3 bg-muted/10'>
+                        <div className='flex items-center justify-between'>
+                          <div>
+                            <Label className='text-xs font-semibold'>Interactive Buttons (Optional)</Label>
+                            <p className='text-[11px] text-muted-foreground'>
+                              Add Quick Reply or Website link buttons (up to 3 buttons).
+                            </p>
+                          </div>
+                          {buttons.length < 3 && (
+                            <Button
+                              type='button'
+                              variant='outline'
+                              size='sm'
+                              onClick={handleAddButton}
+                              className='h-7 px-2.5 text-xs gap-1.5'
+                            >
+                              <Icons.add className='size-3.5' />
+                              Add Button
+                            </Button>
+                          )}
+                        </div>
+
+                        {buttons.map((btn, index) => (
+                          <div
+                            key={index}
+                            className='rounded-md border border-border/60 p-3 space-y-2.5 bg-background shadow-xs'
+                          >
+                            <div className='flex items-center gap-2'>
+                              <select
+                                value={btn.type}
+                                onChange={(e) =>
+                                  handleButtonChange(index, {
+                                    type: e.target.value as 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER',
+                                  })
+                                }
+                                className='h-8 rounded-md border border-input bg-background px-2.5 text-xs font-medium'
+                              >
+                                <option value='QUICK_REPLY'>Quick Reply</option>
+                                <option value='URL'>Website URL</option>
+                                <option value='PHONE_NUMBER'>Phone Number</option>
+                              </select>
+
+                              <Input
+                                placeholder='Button Label (max 25 chars)'
+                                value={btn.text}
+                                onChange={(e) =>
+                                  handleButtonChange(index, { text: e.target.value.slice(0, 25) })
+                                }
+                                className='h-8 text-xs flex-1'
+                                required
+                              />
+
+                              <Button
+                                type='button'
+                                variant='ghost'
+                                size='icon'
+                                onClick={() => handleRemoveButton(index)}
+                                className='h-8 w-8 text-destructive hover:text-destructive'
+                              >
+                                <Icons.trash className='size-4' />
+                              </Button>
+                            </div>
+
+                            {btn.type === 'URL' && (
+                              <div className='space-y-1.5'>
+                                <Input
+                                  placeholder='https://yourwebsite.com/orders'
+                                  value={btn.url || ''}
+                                  onChange={(e) => handleButtonChange(index, { url: e.target.value })}
+                                  className='h-8 text-xs font-mono'
+                                  required
+                                />
+                                <p className='text-[10px] text-muted-foreground'>
+                                  Must include full URL with https://
+                                </p>
+                              </div>
+                            )}
+
+                            {btn.type === 'PHONE_NUMBER' && (
+                              <div className='space-y-1.5'>
+                                <Input
+                                  placeholder='+919876543210 (International format with country code)'
+                                  value={btn.phone_number || ''}
+                                  onChange={(e) =>
+                                    handleButtonChange(index, { phone_number: e.target.value })
+                                  }
+                                  className='h-8 text-xs font-mono'
+                                  required
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {templateType === 'CAROUSEL' && (
+                    <div className='rounded-lg border border-border/70 p-4 space-y-4 bg-muted/10'>
+                      <div className='flex items-center justify-between'>
+                        <div>
+                          <Label className='text-xs font-semibold'>
+                            Carousel Cards ({carouselCards.length} / 10)
+                          </Label>
+                          <p className='text-[11px] text-muted-foreground'>
+                            Add 2 to 10 scrollable cards. Each card has an Image or Video, body copy, and up to 2 buttons.
+                          </p>
+                        </div>
+                        {carouselCards.length < 10 && (
+                          <Button
+                            type='button'
+                            variant='outline'
+                            size='sm'
+                            onClick={() =>
+                              setCarouselCards((prev) => [...prev, createEmptyCarouselCard()])
+                            }
+                            className='h-7 px-2.5 text-xs gap-1.5'
+                          >
+                            <Icons.add className='size-3.5' />
+                            Add Card
+                          </Button>
+                        )}
+                      </div>
+
+                      {carouselCards.map((card, cardIdx) => (
+                        <div
+                          key={cardIdx}
+                          className='rounded-md border border-border/60 p-3.5 space-y-3 bg-background shadow-xs'
+                        >
+                          <div className='flex items-center justify-between'>
+                            <span className='text-xs font-semibold'>Card #{cardIdx + 1}</span>
+                            <div className='flex items-center gap-2'>
+                              <div className='flex items-center gap-1 bg-muted p-0.5 rounded-lg border border-border/60'>
+                                {(['IMAGE', 'VIDEO'] as const).map((fmt) => (
+                                  <button
+                                    key={fmt}
+                                    type='button'
+                                    onClick={() =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                header_format: fmt,
+                                                header_handle: '',
+                                                mediaName: '',
+                                                mediaPreviewUrl: '',
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className={cn(
+                                      'text-[11px] px-2.5 py-0.5 rounded-md transition-colors',
+                                      card.header_format === fmt
+                                        ? 'bg-background text-foreground font-semibold shadow-xs'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    )}
+                                  >
+                                    {fmt === 'IMAGE' ? 'Image' : 'Video'}
+                                  </button>
+                                ))}
+                              </div>
+                              {carouselCards.length > 2 && (
+                                <Button
+                                  type='button'
+                                  variant='ghost'
+                                  size='icon'
+                                  onClick={() =>
+                                    setCarouselCards((prev) => prev.filter((_, i) => i !== cardIdx))
+                                  }
+                                  className='h-7 w-7 text-destructive hover:text-destructive'
+                                >
+                                  <Icons.trash className='size-3.5' />
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          <label className='flex flex-col items-center justify-center border-2 border-dashed border-border/80 rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors bg-muted/10'>
+                            <input
+                              type='file'
+                              className='hidden'
+                              accept={
+                                card.header_format === 'IMAGE' ? 'image/jpeg,image/png' : 'video/mp4'
                               }
-                              className='h-8 text-xs font-mono'
+                              disabled={card.isUploading}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleCarouselCardUpload(cardIdx, file);
+                                e.target.value = '';
+                              }}
+                            />
+                            {card.isUploading ? (
+                              <div className='flex items-center gap-2 text-xs text-muted-foreground py-1'>
+                                <Icons.spinner className='size-3.5 animate-spin text-primary' />
+                                <span>Uploading to Meta...</span>
+                              </div>
+                            ) : card.header_handle ? (
+                              <div className='flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400'>
+                                <Icons.circleCheck className='size-4 shrink-0' />
+                                <span className='font-medium truncate max-w-[220px]'>
+                                  {card.mediaName || 'Uploaded'}
+                                </span>
+                                <span className='text-[11px] text-muted-foreground underline'>
+                                  Replace
+                                </span>
+                              </div>
+                            ) : (
+                              <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+                                <Icons.upload className='size-4' />
+                                <span>
+                                  Upload Card {cardIdx + 1}{' '}
+                                  {card.header_format === 'IMAGE' ? 'Image (JPG/PNG)' : 'Video (MP4)'}
+                                </span>
+                              </div>
+                            )}
+                          </label>
+
+                          <div className='space-y-1'>
+                            <div className='flex justify-between items-center'>
+                              <Label className='text-[11px] font-medium'>Card Body Text</Label>
+                              <span className='text-[10px] text-muted-foreground'>
+                                {card.body_text.length} / 160
+                              </span>
+                            </div>
+                            <Input
+                              placeholder={`Describe Card ${cardIdx + 1}...`}
+                              value={card.body_text}
+                              onChange={(e) =>
+                                setCarouselCards((prev) =>
+                                  prev.map((c, i) =>
+                                    i === cardIdx
+                                      ? { ...c, body_text: e.target.value.slice(0, 160) }
+                                      : c
+                                  )
+                                )
+                              }
+                              className='h-8 text-xs'
                               required
                             />
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+
+                          <div className='space-y-2'>
+                            <div className='flex items-center justify-between'>
+                              <Label className='text-[11px] font-medium'>
+                                Card Buttons ({card.buttons.length} / 2)
+                              </Label>
+                              {card.buttons.length < 2 && (
+                                <Button
+                                  type='button'
+                                  variant='outline'
+                                  size='sm'
+                                  onClick={() =>
+                                    setCarouselCards((prev) =>
+                                      prev.map((c, i) =>
+                                        i === cardIdx
+                                          ? {
+                                              ...c,
+                                              buttons: [
+                                                ...c.buttons,
+                                                { type: 'QUICK_REPLY', text: '' },
+                                              ],
+                                            }
+                                          : c
+                                      )
+                                    )
+                                  }
+                                  className='h-6 px-2 text-[11px] gap-1'
+                                >
+                                  <Icons.add className='size-3' />
+                                  Add Button
+                                </Button>
+                              )}
+                            </div>
+
+                            {card.buttons.map((cBtn, bi) => (
+                              <div key={bi} className='space-y-1.5 rounded border border-border/50 p-2 bg-muted/10'>
+                                <div className='flex items-center gap-2'>
+                                  <select
+                                    value={cBtn.type}
+                                    onChange={(e) =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                buttons: c.buttons.map((b, bIdx) =>
+                                                  bIdx === bi
+                                                    ? {
+                                                        ...b,
+                                                        type: e.target.value as
+                                                          | 'QUICK_REPLY'
+                                                          | 'URL'
+                                                          | 'PHONE_NUMBER',
+                                                      }
+                                                    : b
+                                                ),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className='h-7 rounded-md border border-input bg-background px-2 text-[11px]'
+                                  >
+                                    <option value='QUICK_REPLY'>Quick Reply</option>
+                                    <option value='URL'>Website URL</option>
+                                    <option value='PHONE_NUMBER'>Phone</option>
+                                  </select>
+                                  <Input
+                                    placeholder='Button Label (max 25)'
+                                    value={cBtn.text}
+                                    onChange={(e) =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                buttons: c.buttons.map((b, bIdx) =>
+                                                  bIdx === bi
+                                                    ? { ...b, text: e.target.value.slice(0, 25) }
+                                                    : b
+                                                ),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className='h-7 text-xs flex-1'
+                                    required
+                                  />
+                                  <Button
+                                    type='button'
+                                    variant='ghost'
+                                    size='icon'
+                                    onClick={() =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                buttons: c.buttons.filter((_, bIdx) => bIdx !== bi),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className='h-7 w-7 text-destructive hover:text-destructive'
+                                  >
+                                    <Icons.trash className='size-3.5' />
+                                  </Button>
+                                </div>
+                                {cBtn.type === 'URL' && (
+                                  <Input
+                                    placeholder='https://yourwebsite.com/product'
+                                    value={cBtn.url || ''}
+                                    onChange={(e) =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                buttons: c.buttons.map((b, bIdx) =>
+                                                  bIdx === bi ? { ...b, url: e.target.value } : b
+                                                ),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className='h-7 text-xs font-mono'
+                                    required
+                                  />
+                                )}
+                                {cBtn.type === 'PHONE_NUMBER' && (
+                                  <Input
+                                    placeholder='+919876543210'
+                                    value={cBtn.phone_number || ''}
+                                    onChange={(e) =>
+                                      setCarouselCards((prev) =>
+                                        prev.map((c, i) =>
+                                          i === cardIdx
+                                            ? {
+                                                ...c,
+                                                buttons: c.buttons.map((b, bIdx) =>
+                                                  bIdx === bi
+                                                    ? { ...b, phone_number: e.target.value }
+                                                    : b
+                                                ),
+                                              }
+                                            : c
+                                        )
+                                      )
+                                    }
+                                    className='h-7 text-xs font-mono'
+                                    required
+                                  />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -766,11 +1362,23 @@ export default function CreateTemplatePage() {
                 {/* iPhone 17 Screen Mockup */}
                 <IPhonePreview
                   verifiedName={activeAccount?.verified_name}
-                  headerType={headerType}
+                  headerType={templateType === 'CAROUSEL' ? 'NONE' : headerType}
                   headerText={headerText}
+                  headerMediaUrl={headerMediaPreviewUrl}
+                  headerMediaName={headerMediaName}
                   bodyContent={renderPreviewBody()}
-                  footerText={footerText}
-                  buttons={buttons}
+                  footerText={templateType === 'CAROUSEL' ? undefined : footerText}
+                  buttons={templateType === 'CAROUSEL' ? [] : buttons}
+                  carouselCards={
+                    templateType === 'CAROUSEL'
+                      ? carouselCards.map((c) => ({
+                          headerFormat: c.header_format,
+                          mediaPreviewUrl: c.mediaPreviewUrl,
+                          bodyText: c.body_text,
+                          buttons: c.buttons,
+                        }))
+                      : undefined
+                  }
                 />
 
                 {/* Meta Compliance Quick Guide Card */}

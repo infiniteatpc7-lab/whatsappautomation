@@ -102,6 +102,7 @@ Route::middleware(['auth', 'verified', 'workspace'])->prefix('dashboard')->group
     Route::get('/templates', [TemplateController::class, 'index'])->name('dashboard.templates.index');
     Route::get('/templates/new', [TemplateController::class, 'create'])->name('dashboard.templates.create');
     Route::post('/templates', [TemplateController::class, 'store'])->name('dashboard.templates.store');
+    Route::post('/templates/upload-sample', [TemplateController::class, 'uploadSample'])->name('dashboard.templates.upload-sample');
     Route::get('/templates/{template}/edit', [TemplateController::class, 'edit'])->name('dashboard.templates.edit');
     Route::patch('/templates/{template}', [TemplateController::class, 'update'])->name('dashboard.templates.update');
     Route::delete('/templates/{template}', [TemplateController::class, 'destroy'])->name('dashboard.templates.destroy');

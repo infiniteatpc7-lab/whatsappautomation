@@ -10,7 +10,7 @@ export type TemplateStatus =
   | 'DRAFT';
 
 export interface TemplateComponent {
-  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS';
+  type: 'HEADER' | 'BODY' | 'FOOTER' | 'BUTTONS' | 'CAROUSEL';
   format?: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'LOCATION';
   text?: string;
   example?: {
@@ -23,6 +23,9 @@ export interface TemplateComponent {
     text: string;
     url?: string;
     phone_number?: string;
+  }>;
+  cards?: Array<{
+    components: TemplateComponent[];
   }>;
 }
 

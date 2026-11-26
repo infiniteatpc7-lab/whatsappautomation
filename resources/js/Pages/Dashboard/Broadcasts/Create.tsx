@@ -121,6 +121,7 @@ export default function CreateBroadcastPage() {
   const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now');
   const [scheduledAt, setScheduledAt] = useState('');
   const [headerMediaUrl, setHeaderMediaUrl] = useState('');
+  const [carouselCardUrls, setCarouselCardUrls] = useState<string[]>([]);
   const [smartSenderEnabled, setSmartSenderEnabled] = useState(true);
   const [retryWindowHours, setRetryWindowHours] = useState(36);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -133,6 +134,8 @@ export default function CreateBroadcastPage() {
   const headerComp = selectedTemplate?.components?.find((c) => c.type === 'HEADER');
   const footerComp = selectedTemplate?.components?.find((c) => c.type === 'FOOTER');
   const buttonsComp = selectedTemplate?.components?.find((c) => c.type === 'BUTTONS');
+  const carouselComp = selectedTemplate?.components?.find((c) => c.type === 'CAROUSEL');
+  const carouselCardsMeta = carouselComp?.cards ?? [];
 
   const mediaHeaderFormat = useMemo(() => {
     const fmt = (headerComp?.format || '').toUpperCase();
@@ -240,9 +243,24 @@ export default function CreateBroadcastPage() {
       toast.error(`Please provide a public ${mediaHeaderFormat} URL for the template header.`);
       return;
     }
+    if (carouselCardsMeta.length > 0) {
+      for (let i = 0; i < carouselCardsMeta.length; i++) {
+        if (!(carouselCardUrls[i] || '').trim()) {
+          toast.error(`Please provide a public media URL for Carousel Card #${i + 1}.`);
+          return;
+        }
+      }
+    }
 
     setIsSubmitting(true);
     try {
+      const payloadVariableMapping: Record<string, unknown> = { ...variableMapping };
+      if (carouselCardsMeta.length > 0) {
+        payloadVariableMapping.carousel_cards = carouselCardsMeta.map((_, idx) => ({
+          media_url: (carouselCardUrls[idx] || '').trim(),
+        }));
+      }
+
       const res = await fetch('/dashboard/broadcasts', {
         method: 'POST',
         headers: {
@@ -258,7 +276,7 @@ export default function CreateBroadcastPage() {
           tag_ids: audienceType === 'tags' ? selectedTagIds.map(Number) : [],
           contact_ids: audienceType === 'manual' ? selectedContactIds.map(Number) : [],
           csv_rows: audienceType === 'csv' ? csvRows : [],
-          variable_mapping: variableMapping,
+          variable_mapping: payloadVariableMapping,
           header_media_url: headerMediaUrl.trim() || null,
           smart_sender_enabled: smartSenderEnabled,
           retry_window_hours: retryWindowHours,
@@ -440,6 +458,46 @@ export default function CreateBroadcastPage() {
                         className='h-9 text-xs font-mono'
                         required
                       />
+                    </div>
+                  )}
+
+                  {carouselCardsMeta.length > 0 && (
+                    <div className='rounded-lg border border-border/70 p-4 space-y-3 bg-muted/10'>
+                      <div>
+                        <Label className='text-xs font-semibold'>
+                          Carousel Card Media URLs ({carouselCardsMeta.length} Cards)
+                        </Label>
+                        <p className='text-[11px] text-muted-foreground'>
+                          Provide a public HTTPS image/video URL for each card in this carousel template.
+                        </p>
+                      </div>
+                      {carouselCardsMeta.map((card, idx) => {
+                        const cHeader = card.components?.find((c) => c.type === 'HEADER');
+                        const fmt = (cHeader?.format || 'IMAGE').toUpperCase();
+                        return (
+                          <div key={idx} className='space-y-1'>
+                            <Label htmlFor={`carousel-card-url-${idx}`} className='text-[11px] font-medium'>
+                              Card #{idx + 1} ({fmt}) URL <span className='text-destructive'>*</span>
+                            </Label>
+                            <Input
+                              id={`carousel-card-url-${idx}`}
+                              type='url'
+                              value={carouselCardUrls[idx] || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCarouselCardUrls((prev) => {
+                                  const next = [...prev];
+                                  next[idx] = val;
+                                  return next;
+                                });
+                              }}
+                              placeholder={`https://example.com/card-${idx + 1}.${fmt === 'VIDEO' ? 'mp4' : 'jpg'}`}
+                              className='h-8 text-xs font-mono'
+                              required
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -900,16 +958,39 @@ export default function CreateBroadcastPage() {
                 <IPhonePreview
                   verifiedName={activeAccount?.verified_name || 'Business Account'}
                   headerType={
-                    headerComp &&
-                    (headerComp.format === 'TEXT' || !headerComp.format) &&
-                    headerComp.text
+                    mediaHeaderFormat
+                      ? (mediaHeaderFormat as 'IMAGE' | 'VIDEO' | 'DOCUMENT')
+                      : headerComp &&
+                        (headerComp.format === 'TEXT' || !headerComp.format) &&
+                        headerComp.text
                       ? 'TEXT'
                       : 'NONE'
                   }
                   headerText={headerComp?.text || ''}
+                  headerMediaUrl={headerMediaUrl || undefined}
                   bodyContent={renderPreviewBody()}
                   footerText={footerComp?.text}
                   buttons={previewButtons}
+                  carouselCards={
+                    carouselCardsMeta.length > 0
+                      ? carouselCardsMeta.map((card, idx) => {
+                          const cHeader = card.components?.find((c) => c.type === 'HEADER');
+                          const cBody = card.components?.find((c) => c.type === 'BODY');
+                          const cBtns = card.components?.find((c) => c.type === 'BUTTONS');
+                          return {
+                            headerFormat: cHeader?.format === 'VIDEO' ? 'VIDEO' : 'IMAGE',
+                            mediaPreviewUrl: carouselCardUrls[idx] || undefined,
+                            bodyText: cBody?.text || '',
+                            buttons: cBtns?.buttons
+                              ?.filter((b) => b.type !== 'COPY_CODE')
+                              .map((b) => ({
+                                type: b.type as 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER',
+                                text: b.text,
+                              })),
+                          };
+                        })
+                      : undefined
+                  }
                 />
               </div>
             </div>

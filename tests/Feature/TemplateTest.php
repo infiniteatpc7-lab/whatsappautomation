@@ -428,4 +428,108 @@ class TemplateTest extends TestCase
         $response->assertJson(['success' => true]);
         $this->assertSoftDeleted('templates', ['id' => $template->id]);
     }
+
+    public function test_sample_media_upload_returns_meta_header_handle(): void
+    {
+        [$workspace, $user] = $this->createWorkspaceWithUser('Upload Corp', 'upload@example.com');
+        $this->createAccount($workspace);
+
+        Http::fake([
+            'https://graph.facebook.com/*/app*' => Http::response(['id' => '9988776655'], 200),
+            'https://graph.facebook.com/*/9988776655/uploads*' => Http::response(['id' => 'upload:session_123'], 200),
+            'https://graph.facebook.com/*/upload:session_123*' => Http::response(['h' => '4::sample_handle_pdf_123'], 200),
+        ]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->create('catalog.pdf', 120, 'application/pdf');
+
+        $response = $this->actingAs($user)->postJson('/dashboard/templates/upload-sample', [
+            'file' => $file,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+            'header_handle' => '4::sample_handle_pdf_123',
+            'file_name' => 'catalog.pdf',
+        ]);
+    }
+
+    public function test_document_template_creation_sends_header_handle_to_meta(): void
+    {
+        [$workspace, $user] = $this->createWorkspaceWithUser('Doc Corp', 'doc@example.com');
+        $this->createAccount($workspace);
+
+        Http::fake([
+            'https://graph.facebook.com/*/waba_test_123/message_templates*' => Http::response([
+                'id' => 'meta_tpl_doc_1',
+                'status' => 'PENDING',
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/dashboard/templates', [
+            'name' => 'project_brochure',
+            'category' => 'MARKETING',
+            'language' => 'en_US',
+            'template_type' => 'STANDARD',
+            'header_type' => 'DOCUMENT',
+            'header_handle' => '4::sample_handle_pdf_123',
+            'body_text' => 'Hi {{1}}, please find our latest project brochure attached below.',
+            'body_examples' => ['Rahul'],
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('templates', [
+            'workspace_id' => $workspace->id,
+            'name' => 'project_brochure',
+            'header_type' => 'DOCUMENT',
+        ]);
+    }
+
+    public function test_carousel_template_creation_sends_cards_to_meta(): void
+    {
+        [$workspace, $user] = $this->createWorkspaceWithUser('Carousel Corp', 'carousel@example.com');
+        $this->createAccount($workspace);
+
+        Http::fake([
+            'https://graph.facebook.com/*/waba_test_123/message_templates*' => Http::response([
+                'id' => 'meta_tpl_carousel_1',
+                'status' => 'PENDING',
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/dashboard/templates', [
+            'name' => 'featured_projects_carousel',
+            'category' => 'MARKETING',
+            'language' => 'en_US',
+            'template_type' => 'CAROUSEL',
+            'header_type' => 'NONE',
+            'body_text' => 'Hi {{1}}, explore our featured luxury projects below.',
+            'body_examples' => ['Aarav'],
+            'carousel_cards' => [
+                [
+                    'header_format' => 'IMAGE',
+                    'header_handle' => '4::card1_img',
+                    'body_text' => 'Skyline Villa — 3 BHK starting at 1.2 Cr.',
+                    'buttons' => [
+                        ['type' => 'URL', 'text' => 'View Project', 'url' => 'https://example.com/p1'],
+                    ],
+                ],
+                [
+                    'header_format' => 'IMAGE',
+                    'header_handle' => '4::card2_img',
+                    'body_text' => 'Green Park Residences — Ready to move.',
+                    'buttons' => [
+                        ['type' => 'QUICK_REPLY', 'text' => 'Book Visit'],
+                    ],
+                ],
+            ],
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('templates', [
+            'workspace_id' => $workspace->id,
+            'name' => 'featured_projects_carousel',
+            'header_type' => 'CAROUSEL',
+        ]);
+    }
 }

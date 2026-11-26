@@ -116,7 +116,10 @@ class TemplateController extends Controller
         $name = strtolower($validated['name']);
         $category = strtoupper($validated['category']);
         $language = $validated['language'];
-        $headerType = strtoupper($validated['header_type'] ?? 'NONE');
+        $templateType = strtoupper($validated['template_type'] ?? 'STANDARD');
+        $headerType = $templateType === 'CAROUSEL'
+            ? 'CAROUSEL'
+            : strtoupper($validated['header_type'] ?? 'NONE');
         $bodyText = trim($validated['body_text']);
         $components = $this->buildComponentsPayload($validated);
 
@@ -468,6 +471,60 @@ class TemplateController extends Controller
     }
 
     /**
+     * Upload a sample image, video, or PDF to Meta Resumable Upload API to get a header_handle.
+     */
+    public function uploadSample(
+        Request $request,
+        WorkspaceContext $workspaceContext,
+        MetaCloudClient $metaClient,
+    ): JsonResponse {
+        $workspace = $workspaceContext->getWorkspace();
+        if (! $workspace) {
+            return response()->json(['message' => 'No active workspace.'], 403);
+        }
+
+        /** @var WhatsAppAccount|null $account */
+        $account = $workspace->whatsappAccounts()
+            ->where('status', WhatsAppAccountStatus::CONNECTED)
+            ->first();
+
+        if (! $account) {
+            return response()->json([
+                'message' => 'No active WhatsApp account connected.',
+            ], 422);
+        }
+
+        $request->validate([
+            'file' => ['required', 'file', 'max:16384', 'mimes:jpg,jpeg,png,mp4,pdf'],
+        ]);
+
+        $file = $request->file('file');
+        $binary = file_get_contents($file->getRealPath());
+        if ($binary === false) {
+            return response()->json(['message' => 'Could not read uploaded file.'], 422);
+        }
+
+        try {
+            $handle = $metaClient->uploadMediaHandle(
+                $account,
+                $file->getClientOriginalName(),
+                $file->getMimeType() ?: 'application/octet-stream',
+                $binary
+            );
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Meta sample upload failed: ' . $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'header_handle' => $handle,
+            'file_name' => $file->getClientOriginalName(),
+        ]);
+    }
+
+    /**
      * Validate create or edit template request fields.
      *
      * @return array<string, mixed>
@@ -475,9 +532,11 @@ class TemplateController extends Controller
     protected function validateTemplatePayload(Request $request, bool $isCreate): array
     {
         $rules = [
+            'template_type' => ['nullable', 'string', 'in:STANDARD,CAROUSEL'],
             'header_type' => ['nullable', 'string', 'in:NONE,TEXT,IMAGE,VIDEO,DOCUMENT'],
             'header_text' => ['nullable', 'string', 'max:60'],
             'header_example' => ['nullable', 'string', 'max:60'],
+            'header_handle' => ['nullable', 'string', 'max:1000'],
             'body_text' => ['required', 'string', 'max:1024'],
             'body_examples' => ['nullable', 'array'],
             'body_examples.*' => ['nullable', 'string', 'max:100'],
@@ -488,6 +547,16 @@ class TemplateController extends Controller
             'buttons.*.url' => ['nullable', 'string', 'max:2000'],
             'buttons.*.url_example' => ['nullable', 'string', 'max:2000'],
             'buttons.*.phone_number' => ['nullable', 'string', 'max:20'],
+            'carousel_cards' => ['nullable', 'array', 'min:2', 'max:10'],
+            'carousel_cards.*.header_format' => ['required_with:carousel_cards', 'string', 'in:IMAGE,VIDEO'],
+            'carousel_cards.*.header_handle' => ['required_with:carousel_cards', 'string', 'max:1000'],
+            'carousel_cards.*.body_text' => ['required_with:carousel_cards', 'string', 'max:160'],
+            'carousel_cards.*.buttons' => ['nullable', 'array', 'max:2'],
+            'carousel_cards.*.buttons.*.type' => ['required', 'string', 'in:QUICK_REPLY,URL,PHONE_NUMBER'],
+            'carousel_cards.*.buttons.*.text' => ['required', 'string', 'max:25'],
+            'carousel_cards.*.buttons.*.url' => ['nullable', 'string', 'max:2000'],
+            'carousel_cards.*.buttons.*.url_example' => ['nullable', 'string', 'max:2000'],
+            'carousel_cards.*.buttons.*.phone_number' => ['nullable', 'string', 'max:20'],
         ];
 
         if ($isCreate) {
@@ -509,28 +578,82 @@ class TemplateController extends Controller
      */
     protected function buildComponentsPayload(array $validated): array
     {
+        $templateType = strtoupper($validated['template_type'] ?? 'STANDARD');
         $headerType = strtoupper($validated['header_type'] ?? 'NONE');
         $headerText = trim($validated['header_text'] ?? '');
         $headerExample = trim($validated['header_example'] ?? '');
+        $headerHandle = trim($validated['header_handle'] ?? '');
         $bodyText = trim($validated['body_text']);
         $bodyExamples = $validated['body_examples'] ?? [];
         $footerText = trim($validated['footer_text'] ?? '');
         $buttons = $validated['buttons'] ?? [];
 
+        $formatButtons = static function (array $rawButtons): array {
+            $formatted = [];
+            foreach ($rawButtons as $btn) {
+                $type = strtoupper($btn['type'] ?? 'QUICK_REPLY');
+                $text = substr(trim($btn['text'] ?? ''), 0, 25);
+                if ($text === '') {
+                    continue;
+                }
+
+                if ($type === 'QUICK_REPLY') {
+                    $formatted[] = [
+                        'type' => 'QUICK_REPLY',
+                        'text' => $text,
+                    ];
+                } elseif ($type === 'URL') {
+                    $url = trim($btn['url'] ?? '');
+                    if ($url !== '') {
+                        $btnObj = [
+                            'type' => 'URL',
+                            'text' => $text,
+                            'url' => $url,
+                        ];
+                        if (str_contains($url, '{{1}}')) {
+                            $btnObj['example'] = [! empty($btn['url_example']) ? $btn['url_example'] : 'sample'];
+                        }
+                        $formatted[] = $btnObj;
+                    }
+                } elseif ($type === 'PHONE_NUMBER') {
+                    $phone = trim($btn['phone_number'] ?? '');
+                    if ($phone !== '') {
+                        $formatted[] = [
+                            'type' => 'PHONE_NUMBER',
+                            'text' => $text,
+                            'phone_number' => $phone,
+                        ];
+                    }
+                }
+            }
+
+            return $formatted;
+        };
+
         $components = [];
 
-        if ($headerType === 'TEXT' && $headerText !== '') {
-            $headerComp = [
-                'type' => 'HEADER',
-                'format' => 'TEXT',
-                'text' => $headerText,
-            ];
-            if (str_contains($headerText, '{{1}}')) {
-                $headerComp['example'] = [
-                    'header_text' => [$headerExample !== '' ? $headerExample : 'Sample'],
+        if ($templateType === 'STANDARD') {
+            if ($headerType === 'TEXT' && $headerText !== '') {
+                $headerComp = [
+                    'type' => 'HEADER',
+                    'format' => 'TEXT',
+                    'text' => $headerText,
+                ];
+                if (str_contains($headerText, '{{1}}')) {
+                    $headerComp['example'] = [
+                        'header_text' => [$headerExample !== '' ? $headerExample : 'Sample'],
+                    ];
+                }
+                $components[] = $headerComp;
+            } elseif (in_array($headerType, ['IMAGE', 'VIDEO', 'DOCUMENT'], true) && $headerHandle !== '') {
+                $components[] = [
+                    'type' => 'HEADER',
+                    'format' => $headerType,
+                    'example' => [
+                        'header_handle' => [$headerHandle],
+                    ],
                 ];
             }
-            $components[] = $headerComp;
         }
 
         $bodyComp = [
@@ -550,6 +673,43 @@ class TemplateController extends Controller
         }
         $components[] = $bodyComp;
 
+        if ($templateType === 'CAROUSEL' && ! empty($validated['carousel_cards'])) {
+            $cards = [];
+            foreach ($validated['carousel_cards'] as $card) {
+                $cardFormat = strtoupper($card['header_format'] ?? 'IMAGE');
+                $cardComponents = [
+                    [
+                        'type' => 'HEADER',
+                        'format' => $cardFormat,
+                        'example' => [
+                            'header_handle' => [trim((string) $card['header_handle'])],
+                        ],
+                    ],
+                    [
+                        'type' => 'BODY',
+                        'text' => trim((string) $card['body_text']),
+                    ],
+                ];
+
+                $cardButtons = $formatButtons($card['buttons'] ?? []);
+                if ($cardButtons !== []) {
+                    $cardComponents[] = [
+                        'type' => 'BUTTONS',
+                        'buttons' => $cardButtons,
+                    ];
+                }
+
+                $cards[] = ['components' => $cardComponents];
+            }
+
+            $components[] = [
+                'type' => 'CAROUSEL',
+                'cards' => $cards,
+            ];
+
+            return $components;
+        }
+
         if ($footerText !== '') {
             $components[] = [
                 'type' => 'FOOTER',
@@ -558,45 +718,8 @@ class TemplateController extends Controller
         }
 
         if (! empty($buttons)) {
-            $formattedButtons = [];
-            foreach ($buttons as $btn) {
-                $type = strtoupper($btn['type'] ?? 'QUICK_REPLY');
-                $text = substr(trim($btn['text'] ?? ''), 0, 25);
-                if ($text === '') {
-                    continue;
-                }
-
-                if ($type === 'QUICK_REPLY') {
-                    $formattedButtons[] = [
-                        'type' => 'QUICK_REPLY',
-                        'text' => $text,
-                    ];
-                } elseif ($type === 'URL') {
-                    $url = trim($btn['url'] ?? '');
-                    if ($url !== '') {
-                        $btnObj = [
-                            'type' => 'URL',
-                            'text' => $text,
-                            'url' => $url,
-                        ];
-                        if (str_contains($url, '{{1}}')) {
-                            $btnObj['example'] = [! empty($btn['url_example']) ? $btn['url_example'] : 'sample'];
-                        }
-                        $formattedButtons[] = $btnObj;
-                    }
-                } elseif ($type === 'PHONE_NUMBER') {
-                    $phone = trim($btn['phone_number'] ?? '');
-                    if ($phone !== '') {
-                        $formattedButtons[] = [
-                            'type' => 'PHONE_NUMBER',
-                            'text' => $text,
-                            'phone_number' => $phone,
-                        ];
-                    }
-                }
-            }
-
-            if (! empty($formattedButtons)) {
+            $formattedButtons = $formatButtons($buttons);
+            if ($formattedButtons !== []) {
                 $components[] = [
                     'type' => 'BUTTONS',
                     'buttons' => $formattedButtons,

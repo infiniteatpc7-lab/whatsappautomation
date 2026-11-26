@@ -253,6 +253,56 @@ class MetaCloudClient
     }
 
     /**
+     * Upload a sample media file via Meta's Resumable Upload API to obtain a header_handle
+     * for creating IMAGE, VIDEO, DOCUMENT, or CAROUSEL templates.
+     *
+     * @throws MetaApiException
+     */
+    public function uploadMediaHandle(
+        WhatsAppAccount $account,
+        string $fileName,
+        string $mimeType,
+        string $binaryContent,
+    ): string {
+        $appId = (string) config('services.meta.app_id', '');
+        if ($appId === '') {
+            $appRes = $this->request($account->access_token)->get('/app', ['fields' => 'id']);
+            $appData = $this->handleResponse($appRes);
+            $appId = (string) ($appData['id'] ?? '');
+        }
+
+        if ($appId === '') {
+            throw new MetaApiException('Unable to resolve Meta App ID. Set META_APP_ID in .env.');
+        }
+
+        $sessionRes = $this->request($account->access_token)->post("/{$appId}/uploads", [
+            'file_name' => $fileName,
+            'file_length' => strlen($binaryContent),
+            'file_type' => $mimeType,
+        ]);
+        $sessionData = $this->handleResponse($sessionRes);
+        $sessionId = (string) ($sessionData['id'] ?? '');
+
+        if ($sessionId === '') {
+            throw new MetaApiException('Meta Resumable Upload API did not return an upload session ID.');
+        }
+
+        $uploadRes = $this->request($account->access_token)
+            ->withHeaders(['file_offset' => '0'])
+            ->withBody($binaryContent, $mimeType)
+            ->post("/{$sessionId}");
+
+        $uploadData = $this->handleResponse($uploadRes);
+        $handle = (string) ($uploadData['h'] ?? '');
+
+        if ($handle === '') {
+            throw new MetaApiException('Meta Resumable Upload API did not return a header_handle.');
+        }
+
+        return $handle;
+    }
+
+    /**
      * Get media download URL and metadata for a Meta media ID.
      *
      * @return array<string, mixed>
